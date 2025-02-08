@@ -1,3 +1,4 @@
+import copy
 import csv
 import datetime
 import os
@@ -77,12 +78,66 @@ class QoELog:
 
 
     def __str__(self) -> str:
-        return f"QoELog{self.__dict__}"
+        return f"QoELog('score': {self.score}, 'acceptable': {self.acceptable})"
     
 
     def __repr__(self) -> str:
-        return f"QoELog{self.__dict__}"
+        return str(self)
     
+
+class Round:
+    """
+    Represents a single round.
+    """
+    
+    level_name: str = ""
+    """
+    The name of the level this round was played on.
+    """
+    
+    spike_duration: int = 0
+    """
+    The duration, in ms, of the frame spike this round was played on.
+    """
+
+    uid: int = 0
+    """
+    The user ID of the user who played this round. WARNING: MAY NOT BE UNIQUE.
+    """
+    
+    logs: dict[str, Any] = {
+        "frame": None,
+        "event": None,
+        "qoe": None,
+    }
+    """
+    The logs for this round.
+
+    This is a dict of the form
+    {
+        "frame": ...,
+        "event": ...,
+        "qoe": ...,
+    }
+    """
+
+    def __init__(self, frame: pd.DataFrame, event: pd.DataFrame, qoe: QoELog) -> None:
+        self.logs["frame"] = frame
+        self.logs["event"] = event
+        self.logs["qoe"] = qoe
+
+        self.level_name = frame["Level"].iloc[1]
+        self.spike_duration = int(event["ExpectedLag"].iloc[1])
+        self.uid = int(frame["PlayerID"].iloc[1])
+
+
+    def __str__(self) -> str:
+        return f"Round('level_name': {self.level_name}, 'spike_duration': {self.spike_duration}, 'uid': {self.uid}, 'qoe_log': {self.logs["qoe"]})"
+
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class LogManager:
     _cache: dict[str, Any] = {
@@ -93,6 +148,8 @@ class LogManager:
         "clean_event_logs": None,
 
         "qoe_logs": None,
+
+        "by_uid": None,
     }
     """A cache of the logs."""
     
@@ -294,7 +351,7 @@ class LogManager:
                     lines = [line.split(",")[-1] for line in lines]
                     for i in range(0, len(lines), 2):
                         score = float(lines[i].strip("QoE Score: "))
-                        acceptable = True if lines[i + 1] == "Acceptable?: Yes" else False
+                        acceptable = True if "Yes" in lines[i + 1] else False
                         user_logs.append(QoELog(score, acceptable))
             user_logs = user_logs[2:]  # Remove practice rounds
             logs[uid] = user_logs
@@ -302,6 +359,40 @@ class LogManager:
 
         self._cache["qoe_logs"] = logs
         return self._cache["qoe_logs"]
+
+
+    def rounds(self, force_reload: bool = False) -> dict[str, list[Round]]:
+        """
+        Returns all of the frame, event, and QoE logs, in the form
+
+        {
+            user_id: log
+        }
+
+        where user_id is the user ID and log is a list[Round] representing all the rounds the user played.
+        """
+
+        frame_logs = self.cleaned_frame_logs(force_reload)
+        event_logs = self.cleaned_event_logs(force_reload)
+        qoe_logs = self.qoe_logs(force_reload)
+
+        rounds: dict[str, list[Round]] = {}
+        for uid in frame_logs:
+            frames = frame_logs[uid]
+            events = event_logs[uid]
+            qoes = qoe_logs[uid]
+            
+            user_rounds = []
+            for frame, event, qoe in zip(frames, events, qoes):
+                curr_round = Round(frame, event, qoe)
+                print(curr_round)
+                user_rounds.append(copy.deepcopy(curr_round))
+                print(user_rounds[0])
+
+            print(user_rounds)
+            rounds[uid] = user_rounds
+
+        return rounds
 
 
 def parse_timestamp(string: str) -> float:
@@ -315,12 +406,13 @@ def parse_timestamp(string: str) -> float:
 
 # Testing
 def main():
-    # log_manager = LogManager()
+    log_manager = LogManager()
     # print(log_manager.raw_frame_logs())
     # print(log_manager.raw_event_logs())
     # print(log_manager.cleaned_frame_logs()["338"])
     # print(log_manager.cleaned_event_logs()["338"])
-    # log_manager.qoe_logs()
+    # print(log_manager.qoe_logs())
+    log_manager.rounds()
     pass
 
 
