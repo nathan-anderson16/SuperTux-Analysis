@@ -67,6 +67,15 @@ Each entry is one of the user IDs.
 If a log does not exist, its entry is set to None."""
 
 
+class QoELog:
+    score: float = 0.0
+    acceptable: bool = False
+
+    def __init__(self, score: float, acceptable: bool):
+        self.score = score
+        self.acceptable = acceptable
+        
+
 class LogManager:
     _cache: dict[str, Any] = {
         "raw_frame_logs": None,
@@ -76,7 +85,6 @@ class LogManager:
         "clean_event_logs": None,
 
         "qoe_logs": None,  # TODO
-        "summary_logs": None,  # TODO
     }
     """A cache of the logs."""
     
@@ -256,6 +264,38 @@ class LogManager:
         return self._cache["clean_event_logs"]
 
 
+    def qoe_logs(self, force_reload: bool = False) -> dict[str, list[QoELog]]:
+        """
+        Reads all of the QoE logs and returns them in a dict of the form
+        {"user_id": log}
+        where user_id is the user's ID and log is `list[QoELog]`, where the first entry corresponds to the QoE log for the first round, etc..
+
+        :param force_reload: Whether to force a reload of the logs from disk, invalidating any cache. Warning: this can be slow. Default False.
+        """
+        
+        if not force_reload and self._cache["qoe_logs"] is not None:
+            return self._cache["qoe_logs"]
+
+        logs: dict[str, list[QoELog]] = {}
+        for uid in LOG_PATHS:
+            log = LOG_PATHS[uid]["qoe"]
+            user_logs = []
+            if log is not None:
+                with open(log) as f:
+                    lines = f.readlines()[1:]
+                    lines = [line.split(",")[-1] for line in lines]
+                    for i in range(0, len(lines), 2):
+                        score = float(lines[i].strip("QoE Score: "))
+                        acceptable = True if lines[i + 1] == "Acceptable?: Yes" else False
+                        user_logs.append(QoELog(score, acceptable))
+            user_logs = user_logs[2:]  # Remove practice rounds
+            logs[uid] = user_logs
+            print(f"Read {len(user_logs)} rounds in the QoE log")
+
+        self._cache["qoe_logs"] = logs
+        return self._cache["qoe_logs"]
+
+
 def parse_timestamp(string: str) -> float:
     """
     Given a timestamp of the form "HH:MM:SS.ms", returns the timestamp as a float.
@@ -263,3 +303,18 @@ def parse_timestamp(string: str) -> float:
     return datetime.datetime.timestamp(
         datetime.datetime.strptime(string, "%H:%M:%S.%f")
     )
+
+
+# Testing
+def main():
+    log_manager = LogManager()
+    log_manager.raw_frame_logs()
+    log_manager.raw_event_logs()
+    log_manager.cleaned_frame_logs()
+    log_manager.cleaned_event_logs()
+    log_manager.qoe_logs()
+
+
+if __name__ == "__main__":
+    main()
+
