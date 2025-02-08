@@ -74,7 +74,15 @@ class QoELog:
     def __init__(self, score: float, acceptable: bool):
         self.score = score
         self.acceptable = acceptable
-        
+
+
+    def __str__(self) -> str:
+        return f"QoELog{self.__dict__}"
+    
+
+    def __repr__(self) -> str:
+        return f"QoELog{self.__dict__}"
+    
 
 class LogManager:
     _cache: dict[str, Any] = {
@@ -84,7 +92,7 @@ class LogManager:
         "clean_frame_logs": None,
         "clean_event_logs": None,
 
-        "qoe_logs": None,  # TODO
+        "qoe_logs": None,
     }
     """A cache of the logs."""
     
@@ -307,12 +315,13 @@ def parse_timestamp(string: str) -> float:
 
 # Testing
 def main():
-    log_manager = LogManager()
-    log_manager.raw_frame_logs()
-    log_manager.raw_event_logs()
-    log_manager.cleaned_frame_logs()
-    log_manager.cleaned_event_logs()
-    log_manager.qoe_logs()
+    # log_manager = LogManager()
+    # print(log_manager.raw_frame_logs())
+    # print(log_manager.raw_event_logs())
+    # print(log_manager.cleaned_frame_logs()["338"])
+    # print(log_manager.cleaned_event_logs()["338"])
+    # log_manager.qoe_logs()
+    pass
 
 
 if __name__ == "__main__":
