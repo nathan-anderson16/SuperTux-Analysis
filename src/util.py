@@ -401,13 +401,13 @@ def parse_timestamp(string: str) -> float:
 
 # Testing
 def main():
-    log_manager = LogManager()
+    # log_manager = LogManager()
     # print(log_manager.raw_frame_logs())
     # print(log_manager.raw_event_logs())
     # print(log_manager.cleaned_frame_logs()["338"])
     # print(log_manager.cleaned_event_logs()["338"])
     # print(log_manager.qoe_logs())
-    print(log_manager.rounds())
+    # print(log_manager.rounds())
     pass
 
 
