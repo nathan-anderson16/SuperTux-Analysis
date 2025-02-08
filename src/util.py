@@ -48,7 +48,7 @@ def _get_log_paths(
     """
     Given a path and a list of user IDs, returns all the logs for each user ID.
     """
-    d: dict[str, dict[str, Union[Path, None]]] = {}
+    d: dict[str, dict[str, Union[Path, None]]] = dict()
     for uid in user_ids:
         logs = _find_log_paths(path / uid)
         d[uid] = logs
@@ -105,11 +105,7 @@ class Round:
     The user ID of the user who played this round. WARNING: MAY NOT BE UNIQUE.
     """
     
-    logs: dict[str, Any] = {
-        "frame": None,
-        "event": None,
-        "qoe": None,
-    }
+    logs: dict[str, Any] = dict()
     """
     The logs for this round.
 
@@ -122,9 +118,11 @@ class Round:
     """
 
     def __init__(self, frame: pd.DataFrame, event: pd.DataFrame, qoe: QoELog) -> None:
-        self.logs["frame"] = frame
-        self.logs["event"] = event
-        self.logs["qoe"] = qoe
+        self.logs = {
+            "frame": frame,
+            "event": event,
+            "qoe": qoe,
+        }
 
         self.level_name = frame["Level"].iloc[1]
         self.spike_duration = int(event["ExpectedLag"].iloc[1])
@@ -245,7 +243,7 @@ class LogManager:
         if not force_reload and self._cache["raw_event_logs"] is not None:
             return self._cache["raw_event_logs"]
        
-        dfs: dict[str, pd.DataFrame] = {}
+        dfs: dict[str, pd.DataFrame] = dict()
         for uid in LOG_PATHS:
             path = LOG_PATHS[uid]["event"]
             if path is not None:
@@ -295,7 +293,7 @@ class LogManager:
         
         logs = self.raw_frame_logs(force_reload=force_reload)
         
-        dfs: dict[str, list[pd.DataFrame]] = {}
+        dfs: dict[str, list[pd.DataFrame]] = dict()
         for uid in logs:
             dfs[uid] = self._clean_frame_event_df(logs[uid])
             print(f"Read {len(dfs[uid])} rounds in the frame log")
@@ -320,7 +318,7 @@ class LogManager:
         
         logs = self.raw_event_logs(force_reload=force_reload)
         
-        dfs: dict[str, list[pd.DataFrame]] = {}
+        dfs: dict[str, list[pd.DataFrame]] = dict()
         for uid in logs:
             dfs[uid] = self._clean_frame_event_df(logs[uid])
             print(f"Read {len(dfs[uid])} rounds in the event log")
@@ -341,7 +339,7 @@ class LogManager:
         if not force_reload and self._cache["qoe_logs"] is not None:
             return self._cache["qoe_logs"]
 
-        logs: dict[str, list[QoELog]] = {}
+        logs: dict[str, list[QoELog]] = dict()
         for uid in LOG_PATHS:
             log = LOG_PATHS[uid]["qoe"]
             user_logs = []
@@ -376,7 +374,7 @@ class LogManager:
         event_logs = self.cleaned_event_logs(force_reload)
         qoe_logs = self.qoe_logs(force_reload)
 
-        rounds: dict[str, list[Round]] = {}
+        rounds: dict[str, list[Round]] = dict()
         for uid in frame_logs:
             frames = frame_logs[uid]
             events = event_logs[uid]
@@ -384,10 +382,7 @@ class LogManager:
             
             user_rounds = []
             for frame, event, qoe in zip(frames, events, qoes):
-                curr_round = Round(frame, event, qoe)
-                print(curr_round)
-                user_rounds.append(copy.deepcopy(curr_round))
-                print(user_rounds[0])
+                user_rounds.append(Round(frame, event, qoe))
 
             print(user_rounds)
             rounds[uid] = user_rounds
@@ -412,7 +407,7 @@ def main():
     # print(log_manager.cleaned_frame_logs()["338"])
     # print(log_manager.cleaned_event_logs()["338"])
     # print(log_manager.qoe_logs())
-    log_manager.rounds()
+    print(log_manager.rounds())
     pass
 
 
