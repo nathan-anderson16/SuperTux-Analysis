@@ -162,23 +162,23 @@ class Round:
         """
         Given a unique round ID generated from unique_id(), returns the level name and the frame spike duration.
         """
-        id -= 1
+        id -= 1  # return to zero-based indexing
         return (Round._level_names[int(id / 4)], (id % 4) * 75)
 
 
 class LogManager:
-    _cache: dict[str, Any] = {
-        "raw_frame_logs": None,
-        "raw_event_logs": None,
-        "clean_frame_logs": None,
-        "clean_event_logs": None,
-        "qoe_logs": None,
-        "by_uid": None,
-    }
+    _cache: dict[str, Any] = dict()
     """A cache of the logs."""
 
     def __init__(self) -> None:
-        pass
+        self._cache = {
+            "raw_frame_logs": None,
+            "raw_event_logs": None,
+            "clean_frame_logs": None,
+            "clean_event_logs": None,
+            "qoe_logs": None,
+            "rounds": None,
+        }
 
     def raw_frame_logs(self, force_reload: bool = False) -> dict[str, pd.DataFrame]:
         """
@@ -392,6 +392,8 @@ class LogManager:
 
         where user_id is the user ID and log is a list[Round] representing all the rounds the user played.
         """
+        if not force_reload and self._cache["rounds"] is not None:
+            return self._cache["rounds"]
 
         frame_logs = self.cleaned_frame_logs(force_reload)
         event_logs = self.cleaned_event_logs(force_reload)
@@ -410,7 +412,8 @@ class LogManager:
             print(user_rounds)
             rounds[uid] = user_rounds
 
-        return rounds
+        self._cache["rounds"] = rounds
+        return self._cache["rounds"]
 
 
 def parse_timestamp(string: str) -> float:
