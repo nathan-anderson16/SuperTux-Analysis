@@ -114,6 +114,20 @@ class Round:
         "qoe": ...,
     }
     """
+    
+    _level_names = [
+        "five_five_five_level",
+        "four_four_five_level",
+        "one_two_two_level",
+        "three_four_five_level",
+        "three_three_five_level",
+        "three_three_three_level",
+        "two_five_five_level",
+        "two_three_two_level",
+    ]
+    """
+    A list of all the different names a level can have.
+    """
 
     def __init__(self, frame: pd.DataFrame, event: pd.DataFrame, qoe: QoELog) -> None:
         self.logs = {
@@ -138,38 +152,18 @@ class Round:
         This ranges from 1 to 32 (inclusive).
         Useful when grouping rounds according to the task and frame spike duration.
         """
-        def _level_id(self) -> int:
-            match self.level_name:
-                case "five_five_five_level":
-                    return 0
-            
-                case "four_four_five_level":
-                    return 4
-
-                case "one_two_two_level":
-                    return 8
-            
-                case "three_four_five_level":
-                    return 12
-
-                case "three_three_five_level":
-                    return 16
-
-                case "three_three_three_level":
-                    return 20
-
-                case "two_five_five_level":
-                    return 24
-
-                case "two_three_two_level":
-                    return 28
-
-            raise Exception(f"level name (\"{self.level_name}\") is incorrect")
-        
-        level_id = _level_id(self)
+        level_id = self._level_names.index(self.level_name)
         variant = int(self.spike_duration / 75)
 
         return level_id + variant + 1
+
+    @staticmethod
+    def from_unique_id(id: int) -> tuple[str, int]:
+        """
+        Given a unique round ID generated from unique_id(), returns the level name and the frame spike duration.
+        """
+        id -= 1
+        return (Round._level_names[int(id / 4)], (id % 4) * 75)
 
 
 class LogManager:
@@ -437,6 +431,7 @@ def main():
     # print(log_manager.cleaned_event_logs()["338"])
     # print(log_manager.qoe_logs())
     # print(log_manager.rounds())
+    print(Round.from_unique_id(31))
     pass
 
 
