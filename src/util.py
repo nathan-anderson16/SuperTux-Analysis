@@ -132,6 +132,45 @@ class Round:
     def __repr__(self) -> str:
         return str(self)
 
+    def unique_id(self) -> int:
+        """
+        Returns the unique ID for the task and frame spike duration of this round.
+        This ranges from 1 to 32 (inclusive).
+        Useful when grouping rounds according to the task and frame spike duration.
+        """
+        def _level_id(self) -> int:
+            match self.level_name:
+                case "five_five_five_level":
+                    return 0
+            
+                case "four_four_five_level":
+                    return 4
+
+                case "one_two_two_level":
+                    return 8
+            
+                case "three_four_five_level":
+                    return 12
+
+                case "three_three_five_level":
+                    return 16
+
+                case "three_three_three_level":
+                    return 20
+
+                case "two_five_five_level":
+                    return 24
+
+                case "two_three_two_level":
+                    return 28
+
+            raise Exception(f"level name (\"{self.level_name}\") is incorrect")
+        
+        level_id = _level_id(self)
+        variant = int(self.spike_duration / 75)
+
+        return level_id + variant + 1
+
 
 class LogManager:
     _cache: dict[str, Any] = {
