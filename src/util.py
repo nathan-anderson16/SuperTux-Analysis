@@ -155,7 +155,7 @@ class Round:
         level_id = self._level_names.index(self.level_name)
         variant = int(self.spike_duration / 75)
 
-        return level_id + variant + 1
+        return (level_id * 4) + variant + 1
 
     @staticmethod
     def from_unique_id(id: int) -> tuple[str, int]:
@@ -360,7 +360,7 @@ class LogManager:
         """
         Reads all of the QoE logs and returns them in a dict of the form
         {"user_id": log}
-        where user_id is the user's ID and log is `list[QoELog]`, where the first entry corresponds to the QoE log for the first round, etc..
+        where user_id is the user's ID and log is `list[QoELog]`, where the first entry corresponds to the QoE log for the first round, etc.
 
         :param force_reload: Whether to force a reload of the logs from disk, invalidating any cache. Warning: this can be slow. Default False.
         """
@@ -421,6 +421,27 @@ class LogManager:
 
         self._cache["rounds"] = rounds
         return self._cache["rounds"]
+
+    def logs_per_round(self, force_reload: bool = False) -> dict[int, list[Round]]:
+        """
+        Reads all of the round logs and returns them in a dict of the form
+        {round_id: log}
+        where user_id is the round's ID and log is a list of all instances of that round that were played.
+
+        :param force_reload: Whether to force a reload of the logs from disk, invalidating any cache. Warning: this can be slow. Default False.
+        """
+        rounds = self.rounds(force_reload=force_reload)
+
+        logs: dict[int, list[Round]] = dict()
+        for uid in rounds:
+            for round in rounds[uid]:
+                round_id = round.unique_id()
+                if round_id not in logs:
+                    logs[round_id] = list()
+
+                logs[round_id].append(round)
+
+        return logs
 
 
 def parse_timestamp(string: str) -> float:

@@ -1,14 +1,13 @@
 import math
 import os
 
+import matplotlib
+from matplotlib.figure import figaspect
 import matplotlib.pyplot as plt
 from numpy import ceil
 import pandas as pd
 
-if os.name == "nt":
-    from util import LOG_MANAGER, QoELog
-else:
-    from src.util import LOG_MANAGER, QoELog
+from util import LOG_MANAGER, QoELog, Round
 
 
 figure = 0
@@ -21,6 +20,13 @@ def next_figure() -> int:
 
 
 def main():
+    if not os.path.exists("figures/"):
+        os.makedirs("figures")
+    if not os.path.exists("figures/qoe_logs_per_round"):
+        os.makedirs("figures/qoe_logs_per_round")
+
+    matplotlib.use("qt5agg")
+
     # print("Loading rounds...")
     # round_data = LOG_MANAGER.rounds()
     # print("Finished loading rounds.\n")
@@ -32,7 +38,8 @@ def main():
     plt.rcParams.update({"font.size": 10})
     plt.figure(next_figure())
     size = int(ceil(math.sqrt(float(len(all_qoe_logs)))))
-    fig, axs = plt.subplots(nrows=size, ncols=size)
+    fig, axs = plt.subplots(nrows=size, ncols=size, figsize=(6, 5))
+    fig.canvas.get_width_height
     fig.subplots_adjust(wspace=0.5, hspace=0.5)
     for i, uid in enumerate(all_qoe_logs):
         x = int(i / size)
@@ -61,11 +68,68 @@ def main():
 
     # Distribution of QoE scores per-round
     print("Generating QoE distribution per-round...")
-    plt.figure(next_figure())
-    fig, axs = plt.subplots(nrows=4, ncols=8)
-    fig.subplots_adjust(wspace=0.5, hspace=0.5)
-    for i in range(32):
-        ...
+
+    all_round_logs = LOG_MANAGER.logs_per_round()
+
+    for i in range(1, 33, 4):
+        ms0 = all_round_logs[i]
+        ms75 = all_round_logs[i + 1]
+        ms150 = all_round_logs[i + 2]
+        ms225 = all_round_logs[i + 3]
+
+        level_name, _ = Round.from_unique_id(i)
+
+        plt.figure(next_figure())
+
+        fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(16, 3))
+        fig.subplots_adjust(wspace=0.5)
+
+        pd.Series([round.logs["qoe"].score for round in ms0]).plot(
+            kind="density",
+            ax=axs[0],
+            xlim=(1, 5),
+            ylim=(0, 1),
+            xticks=[1, 5],
+            yticks=[0, 1],
+        )
+        axs[0].set_title("0 ms", fontsize=10)
+        axs[0].set_ylabel("")
+
+        pd.Series([round.logs["qoe"].score for round in ms75]).plot(
+            kind="density",
+            ax=axs[1],
+            xlim=(1, 5),
+            ylim=(0, 1),
+            xticks=[1, 5],
+            yticks=[0, 1],
+        )
+        axs[1].set_title("75 ms", fontsize=10)
+        axs[1].set_ylabel("")
+
+        pd.Series([round.logs["qoe"].score for round in ms150]).plot(
+            kind="density",
+            ax=axs[2],
+            xlim=(1, 5),
+            ylim=(0, 1),
+            xticks=[1, 5],
+            yticks=[0, 1],
+        )
+        axs[2].set_title("150 ms", fontsize=10)
+        axs[2].set_ylabel("")
+
+        pd.Series([round.logs["qoe"].score for round in ms225]).plot(
+            kind="density",
+            ax=axs[3],
+            xlim=(1, 5),
+            ylim=(0, 1),
+            xticks=[1, 5],
+            yticks=[0, 1],
+        )
+        axs[3].set_title("225 ms", fontsize=10)
+        axs[3].set_ylabel("")
+
+        fig.suptitle(level_name)
+        fig.savefig(f"figures/qoe_logs_per_round/{level_name}.png")
 
 
 if __name__ == "__main__":
