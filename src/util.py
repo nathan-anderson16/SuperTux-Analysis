@@ -114,7 +114,7 @@ class Round:
         "qoe": ...,
     }
     """
-    
+
     _level_names = [
         "five_five_five_level",
         "four_four_five_level",
@@ -436,6 +436,7 @@ LOG_MANAGER = LogManager()
 """
 The log manager for the program. This should be the only log manager used.
 """
+
 
 # Testing
 def main():
