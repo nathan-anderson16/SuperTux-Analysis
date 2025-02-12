@@ -171,6 +171,7 @@ cython_debug/
 .pypirc
 
 
-# Results
+# Results and Figures
 Results/
+figures/
 

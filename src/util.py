@@ -1,4 +1,3 @@
-import copy
 import csv
 import datetime
 import os
@@ -6,6 +5,7 @@ from pathlib import Path
 from typing import Any, Union
 
 import pandas as pd
+import tqdm
 
 # Event log headers:
 # PlayerID,Timestamp,Level,ExpectedLag,State,Timer,Coins,Lives,Deaths,X-Position,Y-Position,X-Velocity,Y-Velocity,Event
@@ -194,8 +194,9 @@ class LogManager:
         if not force_reload and self._cache["raw_frame_logs"] is not None:
             return self._cache["raw_frame_logs"]
 
+        print("Loading frame logs...")
         dfs: dict[str, pd.DataFrame] = {}
-        for uid in LOG_PATHS:
+        for uid in tqdm.tqdm(LOG_PATHS):
             path = LOG_PATHS[uid]["frame"]
             if path is not None:
                 df = pd.read_csv(path)
@@ -266,12 +267,15 @@ class LogManager:
         if not force_reload and self._cache["raw_event_logs"] is not None:
             return self._cache["raw_event_logs"]
 
+        print("Loading event logs...")
         dfs: dict[str, pd.DataFrame] = dict()
-        for uid in LOG_PATHS:
+        for uid in tqdm.tqdm(LOG_PATHS):
             path = LOG_PATHS[uid]["event"]
             if path is not None:
                 df = self._read_event_log(path)
                 dfs[uid] = df
+
+        print(f"Loaded {len(dfs.keys())} event logs.")
 
         self._cache["raw_event_logs"] = dfs
         return self._cache["raw_event_logs"]
@@ -316,10 +320,11 @@ class LogManager:
 
         logs = self.raw_frame_logs(force_reload=force_reload)
 
+        print("Cleaning frame logs...")
         dfs: dict[str, list[pd.DataFrame]] = dict()
-        for uid in logs:
+        for uid in tqdm.tqdm(logs):
             dfs[uid] = self._clean_frame_event_df(logs[uid])
-            print(f"Read {len(dfs[uid])} rounds in the frame log")
+            # print(f"Read {len(dfs[uid])} rounds in the frame log")
 
         self._cache["clean_frame_logs"] = dfs
         return self._cache["clean_frame_logs"]
@@ -342,10 +347,11 @@ class LogManager:
 
         logs = self.raw_event_logs(force_reload=force_reload)
 
+        print("Cleaning event logs...")
         dfs: dict[str, list[pd.DataFrame]] = dict()
-        for uid in logs:
+        for uid in tqdm.tqdm(logs):
             dfs[uid] = self._clean_frame_event_df(logs[uid])
-            print(f"Read {len(dfs[uid])} rounds in the event log")
+            # print(f"Read {len(dfs[uid])} rounds in the event log")
 
         self._cache["clean_event_logs"] = dfs
         return self._cache["clean_event_logs"]
@@ -362,8 +368,9 @@ class LogManager:
         if not force_reload and self._cache["qoe_logs"] is not None:
             return self._cache["qoe_logs"]
 
+        print("Loading QoE logs...")
         logs: dict[str, list[QoELog]] = dict()
-        for uid in LOG_PATHS:
+        for uid in tqdm.tqdm(LOG_PATHS):
             log = LOG_PATHS[uid]["qoe"]
             user_logs = []
             if log is not None:
@@ -376,7 +383,7 @@ class LogManager:
                         user_logs.append(QoELog(score, acceptable))
             user_logs = user_logs[2:]  # Remove practice rounds
             logs[uid] = user_logs
-            print(f"Read {len(user_logs)} rounds in the QoE log")
+            # print(f"Read {len(user_logs)} rounds in the QoE log")
 
         self._cache["qoe_logs"] = logs
         return self._cache["qoe_logs"]
@@ -409,7 +416,7 @@ class LogManager:
             for frame, event, qoe in zip(frames, events, qoes):
                 user_rounds.append(Round(frame, event, qoe))
 
-            print(user_rounds)
+            # print(user_rounds)
             rounds[uid] = user_rounds
 
         self._cache["rounds"] = rounds
@@ -425,6 +432,11 @@ def parse_timestamp(string: str) -> float:
     )
 
 
+LOG_MANAGER = LogManager()
+"""
+The log manager for the program. This should be the only log manager used.
+"""
+
 # Testing
 def main():
     # log_manager = LogManager()
@@ -434,7 +446,7 @@ def main():
     # print(log_manager.cleaned_event_logs()["338"])
     # print(log_manager.qoe_logs())
     # print(log_manager.rounds())
-    print(Round.from_unique_id(31))
+    # print(Round.from_unique_id(31))
     pass
 
 
