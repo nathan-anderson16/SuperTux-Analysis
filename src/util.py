@@ -14,6 +14,19 @@ import tqdm
 # Time,PlayerID,DeltaFrames,Timestamp,Level,State,Timer,Coins,Lives,Deaths,X-Position,Y-Position,X-Velocity,Y-Velocity,TickRate
 
 
+figure = 0
+
+
+def next_figure() -> int:
+    """
+    Increments a global figure number and returns it.
+    Use this when you call `plt.figure()`.
+    """
+    global figure
+    figure += 1
+    return figure
+
+
 def _find_user_ids(path: Path):
     """
     Finds the user IDs (folder names) of each folder in the given path.
