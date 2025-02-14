@@ -18,7 +18,8 @@ def main():
     # This doesn't apply to the title font size.
     plt.rcParams.update({"font.size": 10})
 
-    misc.qoe()
+    misc.qoe_distribution()
+    misc.compute_lag_differences()
 
 
 if __name__ == "__main__":

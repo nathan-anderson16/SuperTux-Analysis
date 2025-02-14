@@ -1,17 +1,22 @@
 import math
+from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
-from util import LOG_MANAGER, QoELog, Round, next_figure
+from util import LOG_MANAGER, QoELog, Round, parse_timestamp
 
 
-def qoe():
+def qoe_distribution():
+    """
+    Distribution of QoE scores per-player and per-round.
+    """
     all_qoe_logs = LOG_MANAGER.qoe_logs()
 
     # Distribution of QoE scores per-user
     print("Generating QoE distribution per-player...")
-    plt.figure(next_figure())
+    plt.figure()
 
     # Number of rows and columns the plot will have.
     ncols = 6
@@ -69,7 +74,7 @@ def qoe():
 
         level_name, _ = Round.from_unique_id(i)
 
-        plt.figure(next_figure())
+        plt.figure()
 
         fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(16, 3))
         fig.subplots_adjust(wspace=0.5)
@@ -149,3 +154,42 @@ def qoe():
         # Set the title of the entire figure
         fig.suptitle(level_name, fontsize=12)
         fig.savefig(f"figures/qoe_logs_per_round/{level_name}.png")
+
+
+def compute_lag_differences():
+    # def compute_lag_differences() -> tuple[dict[str, dict[str, float]], dict[str, float]]:
+    """
+    Computes the difference between the expected lag and the actual lag.
+    """
+    print("Computing expected vs actual spike times...")
+    dfs = LOG_MANAGER.cleaned_event_logs()
+
+    means: dict[str, float] = {}
+    stds: dict[str, float] = {}
+    all_diffs = []
+    non_abs_diffs = []
+
+    for uid in dfs:
+        dfs1 = dfs[uid]
+        diffs = []
+        for df in dfs1:
+            starts = df[df["Event"].str.contains(r"Lag Severity \(start\):")]
+            ends = df[df["Event"].str.contains(r"Lag Severity \(end\):")]
+
+            for (_, start), (_, end) in zip(starts.iterrows(), ends.iterrows()):
+                expected_severity = start["ExpectedLag"]
+                start_timestamp = parse_timestamp(str(start["Timestamp"]))
+                end_timestamp = parse_timestamp(str(end["Timestamp"]))
+                diff = (end_timestamp - start_timestamp) * 1000
+                non_abs_diffs.append(diff - expected_severity)
+                diffs.append(abs(expected_severity - diff))
+
+        means[uid] = float(np.mean(diffs))
+        stds[uid] = float(np.std(diffs))
+        all_diffs.extend(diffs)
+
+    plt.figure()
+    plt.boxplot(non_abs_diffs)
+    plt.title("Expected vs Actual Spike Times")
+    plt.ylabel("Difference (ms)")
+    plt.savefig(Path("figures") / "expected_vs_actual_lag_differences.png")
