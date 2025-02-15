@@ -10,12 +10,12 @@ from util import LOG_MANAGER, QoELog, Round, parse_timestamp
 
 def qoe_distribution():
     """
-    Distribution of QoE scores per-player and per-round.
+    Distribution of QoE scores per-user and per-round.
     """
     all_qoe_logs = LOG_MANAGER.qoe_logs()
 
     # Distribution of QoE scores per-user
-    print("Generating QoE distribution per-player...")
+    print("Generating QoE distribution per-user...")
     plt.figure()
 
     # Number of rows and columns the plot will have.
@@ -54,11 +54,8 @@ def qoe_distribution():
         curr_ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "", "", "", "1"])
 
     plt.axis("off")
-    fig.savefig("figures/qoe_distribution_per_player.png")
-    print("Finished generating QoE distribution per-player.")
-    print(
-        "Saved QoE distribution per-player to figures/qoe_distribution_per_player.png.\n"
-    )
+    fig.savefig("figures/qoe_distribution_per_user.png")
+    print("Saved QoE distribution per-user to figures/qoe_distribution_per_user.png.\n")
 
     # Distribution of QoE scores per-round
     print("Generating QoE distribution per-round...")
@@ -155,11 +152,12 @@ def qoe_distribution():
         fig.suptitle(level_name, fontsize=12)
         fig.savefig(f"figures/qoe_logs_per_round/{level_name}.png")
 
+    print("Saved QoE distribution per-round graphs to figures/qoe_logs_per_round/")
+
 
 def compute_lag_differences():
-    # def compute_lag_differences() -> tuple[dict[str, dict[str, float]], dict[str, float]]:
     """
-    Computes the difference between the expected lag and the actual lag.
+    Plots the difference between the expected lag and the actual lag.
     """
     print("Computing expected vs actual spike times...")
     dfs = LOG_MANAGER.cleaned_event_logs()
@@ -167,7 +165,6 @@ def compute_lag_differences():
     means: dict[str, float] = {}
     stds: dict[str, float] = {}
     all_diffs = []
-    non_abs_diffs = []
 
     for uid in dfs:
         dfs1 = dfs[uid]
@@ -178,10 +175,11 @@ def compute_lag_differences():
 
             for (_, start), (_, end) in zip(starts.iterrows(), ends.iterrows()):
                 expected_severity = start["ExpectedLag"]
+
                 start_timestamp = parse_timestamp(str(start["Timestamp"]))
                 end_timestamp = parse_timestamp(str(end["Timestamp"]))
                 diff = (end_timestamp - start_timestamp) * 1000
-                non_abs_diffs.append(diff - expected_severity)
+
                 diffs.append(abs(expected_severity - diff))
 
         means[uid] = float(np.mean(diffs))
@@ -189,7 +187,104 @@ def compute_lag_differences():
         all_diffs.extend(diffs)
 
     plt.figure()
-    plt.boxplot(non_abs_diffs)
+    plt.boxplot(all_diffs)
     plt.title("Expected vs Actual Spike Times")
     plt.ylabel("Difference (ms)")
-    plt.savefig(Path("figures") / "expected_vs_actual_lag_differences.png")
+    plt.savefig("figures/expected_vs_actual_lag_differences.png")
+
+    print(
+        "Saved expected vs actual spike times to figures/expected_vs_actual_lag_differences.png"
+    )
+
+
+def success_distribution():
+    """
+    Distribution of number of successes per-user and per-round.
+    """
+    event_logs = LOG_MANAGER.cleaned_event_logs()
+
+    # ----------Success distribution per-user----------
+
+    print("Generating success distribution per-user...")
+
+    successes: dict[str, list[pd.DataFrame]] = dict()
+
+    for uid in event_logs:
+        successes[uid] = [  # type: ignore
+            df[df["Event"].str.contains("Success")] for df in event_logs[uid]
+        ]
+
+    plt.figure(figsize=(18, 12))
+
+    success_counts = [
+        sum([len(success) for success in successes[k]]) for k in successes
+    ]
+
+    plt.scatter([i for i in range(len(successes))], success_counts)
+
+    _, ymax = plt.ylim()
+    plt.ylim(0, ymax)
+
+    # Draw lines from each data point to the graph.
+    # `zorder` (Z-order) makes the lines draw below the points created with scatter().
+    for i, count in enumerate(success_counts):
+        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+
+    # Set yticks to every 25 units
+    plt.yticks([i * 25 for i in range(0, math.ceil(max(success_counts) / 25.0) + 1)])
+
+    uids = sorted(successes.keys(), key=str.lower)
+    plt.xticks(ticks=[i for i in range(len(successes))], labels=uids)
+
+    plt.savefig("figures/success_distribution_per_user.png")
+
+    print(
+        "Saved success distribution per-user to figures/success_distribution_per_user.png"
+    )
+
+    # ----------Success distribution per-round----------
+
+    print("Generating success distribution per-round...")
+
+    rounds = LOG_MANAGER.logs_per_round()
+
+    round_successes: dict[int, int] = dict()
+
+    for round_id in rounds:
+        logs = rounds[round_id]
+
+        round_successes[round_id] = 0
+
+        for round in logs:
+            df: pd.DataFrame = round.logs["event"]
+            n_successes = len(df[df["Event"].str.contains("Success")])
+
+            # three_three_three_level doesn't log successes for some reason, so we calculate the number of successes from the score.
+            if df["Level"].iloc[1] == "three_three_three_level":
+                start_num = int(df["Coins"].iloc[0])
+                end_num = int(df["Coins"].iloc[-1])
+                n_successes = int((end_num - start_num) / 100)
+
+            round_successes[round_id] += n_successes
+
+    with open("figures/success_distribution_per_round.txt", "w") as f:
+        for round_id in range(1, 33, 4):
+            level_name = rounds[round_id][0].level_name
+            ms0 = round_successes[round_id]
+            ms75 = round_successes[round_id + 1]
+            ms150 = round_successes[round_id + 2]
+            ms225 = round_successes[round_id + 3]
+
+            f.writelines(
+                [
+                    f"{level_name}:\n",
+                    f"      0 ms: {ms0}\n",
+                    f"     75 ms: {ms75}\n",
+                    f"    150 ms: {ms150}\n",
+                    f"    225 ms: {ms225}\n\n",
+                ]
+            )
+
+    print(
+        "Saved success distribution per-round to figures/success_distribution_per_round.txt"
+    )

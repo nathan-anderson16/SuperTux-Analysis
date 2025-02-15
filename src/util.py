@@ -109,9 +109,9 @@ class Round:
 
     This is a dict of the form
     {
-        "frame": ...,
-        "event": ...,
-        "qoe": ...,
+        "frame": pd.DataFrame, the frame log for the round,
+        "event": pd.DataFrame, the event log for the round,
+        "qoe": QoELog, the QoE log for the round,
     }
     """
 
