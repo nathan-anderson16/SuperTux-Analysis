@@ -141,7 +141,7 @@ class Round:
         self.uid = int(frame["PlayerID"].iloc[1])
 
     def __str__(self) -> str:
-        return f"Round('level_name': {self.level_name}, 'spike_duration': {self.spike_duration}, 'uid': {self.uid}, 'qoe_log': {self.logs['qoe']})"
+        return f"Round('level_name': {self.level_name}, 'spike_duration': {self.spike_duration}, 'uid': {self.uid}, 'logs': {{'qoe': {self.logs['qoe']}, 'frame': pd.DataFrame, 'event': pd.DataFrame}})"
 
     def __repr__(self) -> str:
         return str(self)
