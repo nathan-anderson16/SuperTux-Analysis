@@ -21,6 +21,7 @@ def main():
     misc.qoe_distribution()
     misc.compute_lag_differences()
     misc.success_distribution()
+    misc.failure_distribution()
 
 
 if __name__ == "__main__":

@@ -397,7 +397,7 @@ class LogManager:
             ...
         }
 
-        where user_id is the user ID and log is a list[Round] representing all the rounds the user played.
+        where user_id is the user ID and log is a list[Round] representing all the rounds the user played, where the first element is the first round they played, and so on.
         """
         if not force_reload and self._cache["rounds"] is not None:
             return self._cache["rounds"]

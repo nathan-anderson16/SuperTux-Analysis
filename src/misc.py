@@ -1,5 +1,4 @@
 import math
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -54,8 +53,12 @@ def qoe_distribution():
         curr_ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "", "", "", "1"])
 
     plt.axis("off")
+
     fig.savefig("figures/qoe_distribution_per_user.png")
+
     print("Saved QoE distribution per-user to figures/qoe_distribution_per_user.png.\n")
+
+    plt.close()
 
     # Distribution of QoE scores per-round
     print("Generating QoE distribution per-round...")
@@ -152,6 +155,8 @@ def qoe_distribution():
         fig.suptitle(level_name, fontsize=12)
         fig.savefig(f"figures/qoe_logs_per_round/{level_name}.png")
 
+        plt.close()
+
     print("Saved QoE distribution per-round graphs to figures/qoe_logs_per_round/")
 
 
@@ -195,6 +200,8 @@ def compute_lag_differences():
     print(
         "Saved expected vs actual spike times to figures/expected_vs_actual_lag_differences.png"
     )
+
+    plt.close()
 
 
 def success_distribution():
@@ -242,6 +249,8 @@ def success_distribution():
         "Saved success distribution per-user to figures/success_distribution_per_user.png"
     )
 
+    plt.close()
+
     # ----------Success distribution per-round----------
 
     print("Generating success distribution per-round...")
@@ -287,4 +296,91 @@ def success_distribution():
 
     print(
         "Saved success distribution per-round to figures/success_distribution_per_round.txt"
+    )
+
+
+def failure_distribution():
+    """
+    Distribution of number of failures per-user and per-round.
+    """
+    event_logs = LOG_MANAGER.cleaned_event_logs()
+
+    # ----------Failure distribution per-user----------
+
+    print("Generating failure distribution per-user...")
+
+    failures: dict[str, list[pd.DataFrame]] = dict()
+
+    for uid in event_logs:
+        failures[uid] = [  # type: ignore
+            df[df["Event"].str.contains("Failure|Death")] for df in event_logs[uid]
+        ]
+
+    plt.figure(figsize=(18, 12))
+
+    failure_counts = [sum([len(failure) for failure in failures[k]]) for k in failures]
+
+    plt.scatter([i for i in range(len(failures))], failure_counts)
+
+    _, ymax = plt.ylim()
+    plt.ylim(0, ymax)
+
+    # Draw lines from each data point to the graph.
+    # `zorder` (Z-order) makes the lines draw below the points created with scatter().
+    for i, count in enumerate(failure_counts):
+        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+
+    # Set yticks to every 25 units
+    plt.yticks([i * 25 for i in range(0, math.ceil(max(failure_counts) / 25.0) + 1)])
+
+    uids = sorted(failures.keys(), key=str.lower)
+    plt.xticks(ticks=[i for i in range(len(failures))], labels=uids)
+
+    plt.savefig("figures/failure_distribution_per_user.png")
+
+    print(
+        "Saved failure distribution per-user to figures/failure_distribution_per_user.png"
+    )
+
+    plt.close()
+
+    # ----------Failure distribution per-round----------
+
+    print("Generating failure distribution per-round...")
+
+    rounds = LOG_MANAGER.logs_per_round()
+
+    round_failures: dict[int, int] = dict()
+
+    for round_id in rounds:
+        logs = rounds[round_id]
+
+        round_failures[round_id] = 0
+
+        for round in logs:
+            df: pd.DataFrame = round.logs["event"]
+            n_failures = len(df[df["Event"].str.contains("Failure|Death")])
+
+            round_failures[round_id] += n_failures
+
+    with open("figures/failure_distribution_per_round.txt", "w") as f:
+        for round_id in range(1, 33, 4):
+            level_name = rounds[round_id][0].level_name
+            ms0 = round_failures[round_id]
+            ms75 = round_failures[round_id + 1]
+            ms150 = round_failures[round_id + 2]
+            ms225 = round_failures[round_id + 3]
+
+            f.writelines(
+                [
+                    f"{level_name}:\n",
+                    f"      0 ms: {ms0}\n",
+                    f"     75 ms: {ms75}\n",
+                    f"    150 ms: {ms150}\n",
+                    f"    225 ms: {ms225}\n\n",
+                ]
+            )
+
+    print(
+        "Saved failure distribution per-round to figures/failure_distribution_per_round.txt"
     )
