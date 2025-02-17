@@ -214,18 +214,17 @@ def success_distribution():
 
     print("Generating success distribution per-user...")
 
-    successes: dict[str, list[pd.DataFrame]] = dict()
+    successes: dict[str, int] = dict()
 
     for uid in event_logs:
-        successes[uid] = [  # type: ignore
-            df[df["Event"].str.contains("Success")] for df in event_logs[uid]
-        ]
+        last = int(event_logs[uid][-1].iloc[-1]["Coins"])
+        first = int(event_logs[uid][0].iloc[0]["Coins"])
+        successes[uid] = int((last - first) / 100.0)
 
     plt.figure(figsize=(18, 12))
 
-    success_counts = [
-        sum([len(success) for success in successes[k]]) for k in successes
-    ]
+    sorted_uids = sorted(successes.keys(), key=str.lower)
+    success_counts = [successes[k] for k in sorted_uids]
 
     plt.scatter([i for i in range(len(successes))], success_counts)
 
@@ -266,13 +265,10 @@ def success_distribution():
 
         for round in logs:
             df: pd.DataFrame = round.logs["event"]
-            n_successes = len(df[df["Event"].str.contains("Success")])
 
-            # three_three_three_level doesn't log successes for some reason, so we calculate the number of successes from the score.
-            if df["Level"].iloc[1] == "three_three_three_level":
-                start_num = int(df["Coins"].iloc[0])
-                end_num = int(df["Coins"].iloc[-1])
-                n_successes = int((end_num - start_num) / 100)
+            start_num = int(df["Coins"].iloc[0])
+            end_num = int(df["Coins"].iloc[-1])
+            n_successes = int((end_num - start_num) / 100)
 
             round_successes[round_id] += n_successes
 
@@ -318,7 +314,8 @@ def failure_distribution():
 
     plt.figure(figsize=(18, 12))
 
-    failure_counts = [sum([len(failure) for failure in failures[k]]) for k in failures]
+    uids = sorted(failures.keys(), key=str.lower)
+    failure_counts = [sum([len(failure) for failure in failures[k]]) for k in uids]
 
     plt.scatter([i for i in range(len(failures))], failure_counts)
 
@@ -333,7 +330,6 @@ def failure_distribution():
     # Set yticks to every 25 units
     plt.yticks([i * 25 for i in range(0, math.ceil(max(failure_counts) / 25.0) + 1)])
 
-    uids = sorted(failures.keys(), key=str.lower)
     plt.xticks(ticks=[i for i in range(len(failures))], labels=uids)
 
     plt.savefig("figures/failure_distribution_per_user.png")
@@ -383,4 +379,98 @@ def failure_distribution():
 
     print(
         "Saved failure distribution per-round to figures/failure_distribution_per_round.txt"
+    )
+
+
+def player_score_distribution():
+    """
+    Distribution of player score per-user and per-round.
+    """
+    event_logs = LOG_MANAGER.cleaned_event_logs()
+
+    # ----------Success distribution per-user----------
+
+    print("Generating player score distribution per-user...")
+
+    scores: dict[str, list[pd.DataFrame]] = dict()
+
+    for uid in event_logs:
+        scores[uid] = [  # type: ignore
+            df[df["Event"].str.contains("Success")] for df in event_logs[uid]
+        ]
+
+    plt.figure(figsize=(18, 12))
+
+    uids = sorted(scores.keys(), key=str.lower)
+    score_counts = [sum([len(score) * 100 for score in scores[k]]) for k in uids]
+
+    plt.scatter([i for i in range(len(scores))], score_counts)
+
+    _, ymax = plt.ylim()
+    plt.ylim(0, ymax)
+
+    # Draw lines from each data point to the graph.
+    # `zorder` (Z-order) makes the lines draw below the points created with scatter().
+    for i, count in enumerate(score_counts):
+        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+
+    # Set yticks to every 2500 units
+    plt.yticks([i * 2500 for i in range(0, math.ceil(max(score_counts) / 2500.0) + 1)])
+
+    uids = sorted(scores.keys(), key=str.lower)
+    plt.xticks(ticks=[i for i in range(len(scores))], labels=uids)
+
+    plt.savefig("figures/score_distribution_per_user.png")
+
+    print(
+        "Saved score distribution per-user to figures/score_distribution_per_user.png"
+    )
+
+    plt.close()
+
+    # ----------Score distribution per-round----------
+
+    print("Generating score distribution per-round...")
+
+    rounds = LOG_MANAGER.logs_per_round()
+
+    round_scores: dict[int, int] = dict()
+
+    for round_id in rounds:
+        logs = rounds[round_id]
+
+        round_scores[round_id] = 0
+
+        for round in logs:
+            df: pd.DataFrame = round.logs["event"]
+            n_scores = len(df[df["Event"].str.contains("Success")]) * 100
+
+            # three_three_three_level doesn't log successes for some reason, so we calculate the number of successes from the score.
+            if df["Level"].iloc[1] == "three_three_three_level":
+                start_num = int(df["Coins"].iloc[0])
+                end_num = int(df["Coins"].iloc[-1])
+                n_scores = end_num - start_num
+
+            round_scores[round_id] += n_scores
+
+    with open("figures/score_distribution_per_round.txt", "w") as f:
+        for round_id in range(1, 33, 4):
+            level_name = rounds[round_id][0].level_name
+            ms0 = round_scores[round_id]
+            ms75 = round_scores[round_id + 1]
+            ms150 = round_scores[round_id + 2]
+            ms225 = round_scores[round_id + 3]
+
+            f.writelines(
+                [
+                    f"{level_name}:\n",
+                    f"      0 ms: {ms0}\n",
+                    f"     75 ms: {ms75}\n",
+                    f"    150 ms: {ms150}\n",
+                    f"    225 ms: {ms225}\n\n",
+                ]
+            )
+
+    print(
+        "Saved score distribution per-round to figures/score_distribution_per_round.txt"
     )

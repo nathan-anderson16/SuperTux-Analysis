@@ -22,6 +22,7 @@ def main():
     misc.compute_lag_differences()
     misc.success_distribution()
     misc.failure_distribution()
+    misc.player_score_distribution()
 
 
 if __name__ == "__main__":
