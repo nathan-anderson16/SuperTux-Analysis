@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import misc
+import ivdv
 
 
 def main():
@@ -17,13 +18,18 @@ def main():
     # Change the size of the default font in the plot to 10.
     # This doesn't apply to the title font size.
     plt.rcParams.update({"font.size": 10})
+    print("Loaded Event Logs:", misc.LOG_MANAGER.cleaned_event_logs())
+
 
     misc.qoe_distribution()
     misc.compute_lag_differences()
     misc.success_distribution()
     misc.failure_distribution()
     misc.player_score_distribution()
-
+    ivdv.graph_success_distribution()
+    ivdv.graph_failure_distribution()
+    ivdv.graph_success_rate()
+    ivdv.graph_acceptability()
 
 if __name__ == "__main__":
     main()
