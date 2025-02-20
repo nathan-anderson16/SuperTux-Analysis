@@ -30,7 +30,6 @@ def main():
     ivdv.graph_failure_distribution()
     ivdv.graph_success_rate()
     ivdv.graph_acceptability()
-    ivdv.graph_number_of_spikes()
 
 if __name__ == "__main__":
     main()
