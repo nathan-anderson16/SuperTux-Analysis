@@ -13,6 +13,80 @@ def qoe_distribution():
     """
     all_qoe_logs = LOG_MANAGER.qoe_logs()
 
+    # -----Overall QoE Score Distribution-----
+    print("Generating overall QoE score distribution...")
+    plt.figure()
+
+    ax = plt.subplot()
+
+    all_scores: list[float] = []
+    for uid in all_qoe_logs:
+        logs = all_qoe_logs[uid]
+        for log in logs:
+            all_scores.append(log.score)
+
+    pd.Series(all_scores).plot(
+        kind="density",
+        ax=ax,
+        xlim=(1, 5),
+        ylim=(0, 1),
+        xticks=[1, 5],
+        yticks=[0, 1],
+    )
+
+    # `pad` changes the size of the padding between the title and the plot
+    ax.set_title("Distribution of QoE Scores", fontsize=11)
+
+    # `labelpad` changes the size of the padding between the label and the plot
+    ax.set_xlabel("QoE Score")
+    ax.set_ylabel("Density")
+
+    ax.set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    plt.savefig("figures/overall_qoe_distribution.png")
+
+    print(
+        "Saved overall QoE score distribution to figures/overall_qoe_distribution.png"
+    )
+
+    # -----Mean QoE Score Distribution-----
+    print("Generating mean QoE score distribution...")
+    plt.figure()
+
+    ax = plt.subplot()
+
+    all_scores: list[float] = []
+    for uid in all_qoe_logs:
+        scores: list[float] = []
+        logs = all_qoe_logs[uid]
+        for log in logs:
+            scores.append(log.score)
+        all_scores.append(float(np.array(scores).mean()))
+
+    pd.Series(all_scores).plot(
+        kind="density",
+        ax=ax,
+        xlim=(1, 5),
+        ylim=(0, 1),
+        xticks=[1, 5],
+        yticks=[0, 1],
+    )
+
+    # `pad` changes the size of the padding between the title and the plot
+    ax.set_title("Distribution of Mean QoE Scores", fontsize=11)
+
+    # `labelpad` changes the size of the padding between the label and the plot
+    ax.set_xlabel("QoE Score")
+    ax.set_ylabel("Density")
+
+    ax.set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    plt.savefig("figures/mean_qoe_distribution.png")
+
+    print("Saved mean QoE score distribution to figures/mean_qoe_distribution.png")
+
     # Distribution of QoE scores per-user
     print("Generating QoE distribution per-user...")
     plt.figure()
@@ -56,7 +130,7 @@ def qoe_distribution():
 
     fig.savefig("figures/qoe_distribution_per_user.png")
 
-    print("Saved QoE distribution per-user to figures/qoe_distribution_per_user.png.\n")
+    print("Saved QoE distribution per-user to figures/qoe_distribution_per_user.png.")
 
     plt.close()
 
@@ -65,8 +139,12 @@ def qoe_distribution():
 
     all_round_logs = LOG_MANAGER.logs_per_round()
 
+    fig = plt.figure(figsize=(16, 25))
+    subfigs = fig.subfigures(nrows=8, ncols=1)
+
+    plt.subplots_adjust(hspace=0.5)
+
     for i in range(1, 33, 4):
-        # The round logs for each frame spike duration
         ms0 = all_round_logs[i]
         ms75 = all_round_logs[i + 1]
         ms150 = all_round_logs[i + 2]
@@ -74,10 +152,9 @@ def qoe_distribution():
 
         level_name, _ = Round.from_unique_id(i)
 
-        plt.figure()
+        subfig = subfigs[int(i / 4)]
 
-        fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(16, 3))
-        fig.subplots_adjust(wspace=0.5)
+        axs = subfig.subplots(nrows=1, ncols=4)
 
         # 0 ms stutter
         pd.Series([round.logs["qoe"].score for round in ms0]).plot(
@@ -151,11 +228,10 @@ def qoe_distribution():
         axs[3].set_xticks([1, 2, 3, 4, 5], labels=["1", "", "", "", "5"])
         axs[3].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "", "", "", "1"])
 
-        # Set the title of the entire figure
-        fig.suptitle(level_name, fontsize=12)
-        fig.savefig(f"figures/qoe_logs_per_round/{level_name}.png")
+        subfig.suptitle(level_name, fontsize=12)
 
-        plt.close()
+    plt.savefig("figures/qoe_scores_per_round.png")
+    plt.close()
 
     print("Saved QoE distribution per-round graphs to figures/qoe_logs_per_round/")
 
@@ -194,6 +270,8 @@ def compute_lag_differences():
     plt.figure()
     plt.boxplot(all_diffs)
     plt.title("Expected vs Actual Spike Times")
+    plt.xticks(ticks=[])
+    plt.xlabel("")
     plt.ylabel("Difference (ms)")
     plt.savefig("figures/expected_vs_actual_lag_differences.png")
 
@@ -221,10 +299,12 @@ def success_distribution():
         first = int(event_logs[uid][0].iloc[0]["Coins"])
         successes[uid] = int((last - first) / 100.0)
 
-    plt.figure(figsize=(18, 12))
+    plt.figure(figsize=(14, 12))
 
-    sorted_uids = sorted(successes.keys(), key=str.lower)
-    success_counts = [successes[k] for k in sorted_uids]
+    count_uid = [(successes[k], k) for k in successes.keys()]
+    sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
+    # sorted_uids = sorted(successes.keys(), key=str.lower)
+    success_counts = [successes[k[1]] for k in sorted_uids]
 
     plt.scatter([i for i in range(len(successes))], success_counts)
 
@@ -239,8 +319,13 @@ def success_distribution():
     # Set yticks to every 25 units
     plt.yticks([i * 25 for i in range(0, math.ceil(max(success_counts) / 25.0) + 1)])
 
-    uids = sorted(successes.keys(), key=str.lower)
-    plt.xticks(ticks=[i for i in range(len(successes))], labels=uids)
+    # uids = sorted(successes.keys(), key=str.lower)
+    plt.xticks(
+        ticks=[i for i in range(len(successes))], labels=[k[1] for k in sorted_uids]
+    )
+
+    plt.xlabel("User ID")
+    plt.ylabel("Number of Successes")
 
     plt.savefig("figures/success_distribution_per_user.png")
 
@@ -331,6 +416,9 @@ def failure_distribution():
     plt.yticks([i * 25 for i in range(0, math.ceil(max(failure_counts) / 25.0) + 1)])
 
     plt.xticks(ticks=[i for i in range(len(failures))], labels=uids)
+
+    plt.xlabel("User ID")
+    plt.ylabel("Number of Failures")
 
     plt.savefig("figures/failure_distribution_per_user.png")
 
