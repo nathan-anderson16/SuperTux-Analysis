@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from util import LOG_MANAGER, QoELog, Round, parse_timestamp
+from util import LOG_MANAGER, ROUND_NAMES, QoELog, Round, parse_timestamp
 
 
 def qoe_distribution():
@@ -228,7 +228,7 @@ def qoe_distribution():
         axs[3].set_xticks([1, 2, 3, 4, 5], labels=["1", "", "", "", "5"])
         axs[3].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "", "", "", "1"])
 
-        subfig.suptitle(level_name, fontsize=12)
+        subfig.suptitle(ROUND_NAMES[level_name], fontsize=12)
 
     plt.savefig("figures/qoe_scores_per_round.png")
     plt.close()
@@ -303,7 +303,6 @@ def success_distribution():
 
     count_uid = [(successes[k], k) for k in successes.keys()]
     sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
-    # sorted_uids = sorted(successes.keys(), key=str.lower)
     success_counts = [successes[k[1]] for k in sorted_uids]
 
     plt.scatter([i for i in range(len(successes))], success_counts)
@@ -319,7 +318,6 @@ def success_distribution():
     # Set yticks to every 25 units
     plt.yticks([i * 25 for i in range(0, math.ceil(max(success_counts) / 25.0) + 1)])
 
-    # uids = sorted(successes.keys(), key=str.lower)
     plt.xticks(
         ticks=[i for i in range(len(successes))], labels=[k[1] for k in sorted_uids]
     )
@@ -367,7 +365,7 @@ def success_distribution():
 
             f.writelines(
                 [
-                    f"{level_name}:\n",
+                    f"{ROUND_NAMES[level_name]}:\n",
                     f"      0 ms: {ms0}\n",
                     f"     75 ms: {ms75}\n",
                     f"    150 ms: {ms150}\n",

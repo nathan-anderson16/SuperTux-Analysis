@@ -14,6 +14,18 @@ import tqdm
 # Time,PlayerID,DeltaFrames,Timestamp,Level,State,Timer,Coins,Lives,Deaths,X-Position,Y-Position,X-Velocity,Y-Velocity,TickRate
 
 
+ROUND_NAMES: dict[str, str] = {
+    "one_two_two_level": "Collect Moving Power-Up",
+    "two_three_two_level": "Collect Bouncing Power-Up",
+    "three_three_three_level": "Squish Bouncing Enemy",
+    "three_three_five_level": "Small Gap, Medium Platform",
+    "three_four_five_level": "Medium Gap, Small Platform",
+    "two_five_five_level": "Large Gap, Large Platform",
+    "four_four_five_level": "7-Jump",
+    "five_five_five_level": "Z-Jump",
+}
+
+
 def _find_user_ids(path: Path):
     """
     Finds the user IDs (folder names) of each folder in the given path.
