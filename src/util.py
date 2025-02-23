@@ -24,6 +24,26 @@ ROUND_NAMES: dict[str, str] = {
     "four_four_five_level": "7-Jump",
     "five_five_five_level": "Z-Jump",
 }
+"""
+Converts the precision/deadline/impact score to the round name.
+For example, "five_five_five_level" gets converted to "Z-Jump"
+"""
+
+
+ROUND_MAX_SUCCESSES: dict[str, int] = {
+    "one_two_two_level": 12,
+    "two_three_two_level": 7,
+    "three_three_three_level": 12,
+    "three_three_five_level": 14,
+    "three_four_five_level": 14,
+    "two_five_five_level": 13,
+    "four_four_five_level": 15,
+    "five_five_five_level": 16,
+}
+"""
+The maximum number of successes a round can have.
+For example, "five_five_five_level" can have a maximum of 16 successes.
+"""
 
 
 def _find_user_ids(path: Path):
