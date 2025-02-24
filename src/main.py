@@ -13,7 +13,9 @@ def main():
     if not os.path.exists("figures/qoe_logs_per_round"):
         os.makedirs("figures/qoe_logs_per_round")
 
-    matplotlib.use("qt5agg")
+    # qt5 isn't a requirement on Windows
+    if os.name != "nt":
+        matplotlib.use("qt5agg")
 
     # Change the size of the default font in the plot to 10.
     # This doesn't apply to the title font size.

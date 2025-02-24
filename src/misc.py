@@ -134,7 +134,7 @@ def qoe_distribution():
 
     plt.close()
 
-    # Distribution of QoE scores per-round
+    # -----Distribution of QoE scores per-round-----
     print("Generating QoE distribution per-round...")
 
     all_round_logs = LOG_MANAGER.logs_per_round()
@@ -234,6 +234,180 @@ def qoe_distribution():
     plt.close()
 
     print("Saved QoE distribution per-round graphs to figures/qoe_logs_per_round/")
+
+    # -----Mean QoE Distribution Per-Round-----
+    all_round_logs = LOG_MANAGER.logs_per_round()
+
+    print("Generating QoE distribution per spike size...")
+
+    fig = plt.figure(figsize=(12, 3.3))
+
+    axs = fig.subplots(nrows=1, ncols=4)
+
+    qoe_ms0 = []
+    qoe_ms75 = []
+    qoe_ms150 = []
+    qoe_ms225 = []
+
+    for i in range(1, 33, 4):
+        ms0 = all_round_logs[i]
+        ms75 = all_round_logs[i + 1]
+        ms150 = all_round_logs[i + 2]
+        ms225 = all_round_logs[i + 3]
+
+        m0 = [log.logs["qoe"].score for log in ms0]
+        m75 = [log.logs["qoe"].score for log in ms75]
+        m150 = [log.logs["qoe"].score for log in ms150]
+        m225 = [log.logs["qoe"].score for log in ms225]
+
+        qoe_ms0.extend(m0)
+        qoe_ms75.extend(m75)
+        qoe_ms150.extend(m150)
+        qoe_ms225.extend(m225)
+
+    pd.Series(qoe_ms0).plot(
+        kind="density",
+        ax=axs[0],
+        xlim=(1, 5),
+        ylim=(0, 1),
+        xticks=[1, 5],
+        yticks=[0, 1],
+    )
+    axs[0].set_title("0 ms", fontsize=11)
+    axs[0].set_xlabel("QoE Score")
+    axs[0].set_ylabel("Density")
+    axs[0].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    axs[0].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    pd.Series(qoe_ms75).plot(
+        kind="density",
+        ax=axs[1],
+        xlim=(1, 5),
+        ylim=(0, 1),
+        xticks=[1, 5],
+        yticks=[0, 1],
+    )
+    axs[1].set_title("75 ms", fontsize=11)
+    axs[1].set_xlabel("QoE Score")
+    axs[1].set_ylabel("Density")
+    axs[1].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    axs[1].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    pd.Series(qoe_ms150).plot(
+        kind="density",
+        ax=axs[2],
+        xlim=(1, 5),
+        ylim=(0, 1),
+        xticks=[1, 5],
+        yticks=[0, 1],
+    )
+    axs[2].set_title("150 ms", fontsize=11)
+    axs[2].set_xlabel("QoE Score")
+    axs[2].set_ylabel("Density")
+    axs[2].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    axs[2].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    pd.Series(qoe_ms225).plot(
+        kind="density",
+        ax=axs[3],
+        xlim=(1, 5),
+        ylim=(0, 1),
+        xticks=[1, 5],
+        yticks=[0, 1],
+    )
+    axs[3].set_title("225 ms", fontsize=11)
+    axs[3].set_xlabel("QoE Score")
+    axs[3].set_ylabel("Density")
+    axs[3].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    axs[3].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    fig.suptitle("Distribution of QoE Scores Per-Spike Size")
+
+    fig.tight_layout()
+    fig.savefig("figures/qoe_distribution_per_spike_size.png")
+    plt.close()
+
+    print("Saved QoE distribution per spike size to figures/qoe_distribution_per_spike_size.png")
+
+    # -----QoE Distribution vs Spike Size-----
+    print("Generating QoE distribution vs spike size...")
+
+    all_round_logs = LOG_MANAGER.logs_per_round()
+
+    print("Generating mean QoE per spike size...")
+
+    fig = plt.figure(figsize=(4, 3))
+
+    qoe_ms0 = []
+    qoe_ms75 = []
+    qoe_ms150 = []
+    qoe_ms225 = []
+
+    for i in range(1, 33, 4):
+        ms0 = all_round_logs[i]
+        ms75 = all_round_logs[i + 1]
+        ms150 = all_round_logs[i + 2]
+        ms225 = all_round_logs[i + 3]
+
+        m0 = [log.logs["qoe"].score for log in ms0]
+        m75 = [log.logs["qoe"].score for log in ms75]
+        m150 = [log.logs["qoe"].score for log in ms150]
+        m225 = [log.logs["qoe"].score for log in ms225]
+
+        qoe_ms0.extend(m0)
+        qoe_ms75.extend(m75)
+        qoe_ms150.extend(m150)
+        qoe_ms225.extend(m225)
+
+    z = 0.95
+
+    # Standard deviations
+    sigma_0 = float(np.std(qoe_ms0))
+    sigma_75 = float(np.std(qoe_ms75))
+    sigma_150 = float(np.std(qoe_ms150))
+    sigma_225 = float(np.std(qoe_ms225))
+
+    n_0 = len(qoe_ms0)
+    n_75 = len(qoe_ms75)
+    n_150 = len(qoe_ms150)
+    n_225 = len(qoe_ms225)
+
+    # Confidence intervals
+    ci_0 = z * sigma_0 / math.sqrt(n_0)
+    ci_75 = z * sigma_75 / math.sqrt(n_75)
+    ci_150 = z * sigma_150 / math.sqrt(n_150)
+    ci_225 = z * sigma_225 / math.sqrt(n_225)
+
+    x = [0, 75, 150, 225]
+    y = [
+        float(np.mean(qoe_ms0)),
+        float(np.mean(qoe_ms75)),
+        float(np.mean(qoe_ms150)),
+        float(np.mean(qoe_ms225)),
+    ]
+
+    plt.scatter(x, y, s=10)
+    plt.plot(x, y)
+    # , color="#1f77b4", color="#ff7f0e"
+    plt.errorbar(x, y, yerr=[ci_0, ci_75, ci_150, ci_225], linewidth=1, capsize=4, fmt="none")
+    # plt.errorbar(x, y, yerr=[sigma_0, sigma_75, sigma_150, sigma_225], fmt='o', color="#1f77b4")
+
+    plt.xlabel("Spike Duration")
+    plt.ylabel("Mean QoE Score")
+    plt.title("Mean QoE Score vs Spike Duration")
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+
+    plt.ylim((0, 5))
+
+    plt.tight_layout()
+
+    plt.savefig("figures/mean_qoe_vs_spike_size.png")
+    plt.close()
+
+    print("Saved mean QoE vs spike size to figures/mean_qoe_vs_spike_size.png")
+    
 
 
 def compute_lag_differences():
