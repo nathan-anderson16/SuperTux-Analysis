@@ -455,6 +455,128 @@ def compute_lag_differences():
 
     plt.close()
 
+def success_rate():
+    """
+    Successes rate per-user and per-round.
+    """
+    event_logs = LOG_MANAGER.cleaned_event_logs()
+
+    # ----------Success distribution per-user----------
+
+    print("Generating success rate per-user...")
+
+    success_rate: dict[str, int] = dict()
+
+    for uid in event_logs:
+        last = int(event_logs[uid][-1].iloc[-1]["Coins"])
+        first = int(event_logs[uid][0].iloc[0]["Coins"])
+        success_rate[uid] = int((last - first) / 100.0)
+
+    total_max = 0
+    for max_value in ROUND_MAX_SUCCESSES.values() :
+        total_max += max_value
+
+    for (uid, total) in success_rate.items() :
+        success_rate[uid] = total / (total_max * 4)
+
+    plt.figure(figsize=(14, 12))
+
+    count_uid = [(success_rate[k], k) for k in success_rate.keys()]
+    sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
+    success_counts = [success_rate[k[1]] for k in sorted_uids]
+
+    plt.scatter([i for i in range(len(success_rate))], success_counts)
+
+    _, ymax = plt.ylim()
+    plt.ylim(0, ymax)
+
+    # Draw lines from each data point to the graph.
+    # `zorder` (Z-order) makes the lines draw below the points created with scatter().
+    for i, count in enumerate(success_counts):
+        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+
+    # It looks like it’s z * s / sqrt(n)
+    plt.errorbar([i for i in range(len(success_rate))], success_counts, yerr=[0.95 * np.std(success_counts) / len(success_counts)**0.5 for i in range(len(success_counts))])
+    
+    # Set yticks to every 0.5 units
+    plt.yticks([i * 0.1 for i in range(0, 10 + 1)])
+
+    plt.xticks(
+        ticks=[i for i in range(len(success_rate))], labels=[k[1] for k in sorted_uids]
+    )
+
+    plt.xlabel("User ID")
+    plt.ylabel("Success Rate")
+
+    plt.savefig("figures/success_rate_per_user.png")
+
+    print(
+        "Saved success rate per-user to figures/success_rate_per_user.png"
+    )
+
+    plt.close()
+
+    # ----------Success distribution per-round----------
+
+    print("Generating success rate per-round...")
+
+    rounds = LOG_MANAGER.logs_per_round()
+
+    round_success_rate: dict[str, int] = dict()
+
+    for round_name in rounds:
+        logs = rounds[round_name]
+
+        round_success_rate[rounds[round_name][0].level_name] = 0
+
+        for round in logs:
+            df: pd.DataFrame = round.logs["event"]
+
+            start_num = int(df["Coins"].iloc[0])
+            end_num = int(df["Coins"].iloc[-1])
+            n_successes = int((end_num - start_num) / 100)
+
+            round_success_rate[rounds[round_name][0].level_name] += n_successes
+
+    for (round_name, successes) in round_success_rate.items() :
+        round_success_rate[round_name] = successes / (ROUND_MAX_SUCCESSES[round_name] * 4 * len(success_rate.keys()))
+
+    plt.figure(figsize=(14, 12))
+
+    count_uid = [(round_success_rate[k], k) for k in round_success_rate.keys()]
+    sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
+    success_counts = [round_success_rate[k[1]] for k in sorted_uids]
+
+    plt.scatter([i for i in range(len(round_success_rate))], success_counts)
+
+    _, ymax = plt.ylim()
+    plt.ylim(0, ymax)
+    
+    # It looks like it’s z * s / sqrt(n)
+    plt.errorbar([i for i in range(len(round_success_rate))], success_counts, yerr=[0.95 * np.std(success_counts) / len(success_counts)**0.5 for i in range(len(success_counts))])
+    
+    # Draw lines from each data point to the graph.
+    # `zorder` (Z-order) makes the lines draw below the points created with scatter().
+    for i, count in enumerate(success_counts):
+        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+
+    # Set yticks to every 25 units
+    plt.yticks([i * 0.1 for i in range(0, 10 + 1)])
+
+    plt.xticks(
+        ticks=[i for i in range(len(round_success_rate))], labels=[k[1] for k in sorted_uids]
+    )
+
+    plt.xlabel("Round ID")
+    plt.ylabel("Success Rate")
+
+    plt.savefig("figures/success_rate_per_round.png")
+
+    print(
+        "Saved success rate per-round to figures/success_rate_per_round.png"
+    )
+
+    plt.close()
 
 def success_rate_vs_spike_time():
     """
@@ -624,27 +746,33 @@ def success_distribution():
 
             round_successes[round_id] += n_successes
 
-    with open("figures/success_distribution_per_round.txt", "w") as f:
-        for round_id in range(1, 33, 4):
-            level_name = rounds[round_id][0].level_name
-            ms0 = round_successes[round_id]
-            ms75 = round_successes[round_id + 1]
-            ms150 = round_successes[round_id + 2]
-            ms225 = round_successes[round_id + 3]
+    plt.scatter([i for i in range(len(round_successes))], success_counts)
 
-            f.writelines(
-                [
-                    f"{ROUND_NAMES[level_name]}:\n",
-                    f"      0 ms: {ms0}\n",
-                    f"     75 ms: {ms75}\n",
-                    f"    150 ms: {ms150}\n",
-                    f"    225 ms: {ms225}\n\n",
-                ]
-            )
+    _, ymax = plt.ylim()
+    plt.ylim(0, ymax)
+
+    # Draw lines from each data point to the graph.
+    # `zorder` (Z-order) makes the lines draw below the points created with scatter().
+    for i, count in enumerate(success_counts):
+        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+
+    # Set yticks to every 25 units
+    plt.yticks([i * 25 for i in range(0, math.ceil(max(success_counts) / 25.0) + 1)])
+
+    plt.xticks(
+        ticks=[i for i in range(len(successes))], labels=[k[1] for k in sorted_uids]
+    )
+
+    plt.xlabel("User ID")
+    plt.ylabel("Number of Successes")
+
+    plt.savefig("figures/success_distribution_per_user.png")
 
     print(
-        "Saved success distribution per-round to figures/success_distribution_per_round.txt"
+        "Saved success distribution per-user to figures/success_distribution_per_user.png"
     )
+
+    plt.close()
 
 
 def failure_distribution():

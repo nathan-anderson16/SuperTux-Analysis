@@ -27,6 +27,7 @@ def main():
     misc.qoe_distribution()
     # misc.compute_lag_differences()
     misc.success_distribution()
+    misc.success_rate()
     misc.failure_distribution()
     misc.player_score_distribution()
     ivdv.graph_success_distribution()
