@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from util import LOG_MANAGER, ROUND_NAMES, QoELog, Round, parse_timestamp
+from util import LOG_MANAGER, ROUND_MAX_SUCCESSES, ROUND_NAMES, QoELog, Round, parse_timestamp
 
 
 def qoe_distribution():
@@ -455,6 +455,97 @@ def compute_lag_differences():
 
     plt.close()
 
+
+def success_rate_vs_spike_time():
+    """
+    Success rate vs spike time
+    """
+    event_logs = LOG_MANAGER.cleaned_event_logs()
+
+    print("Generating success rate vs spike time...")
+
+    ms0 = []
+    ms75 = []
+    ms150 = []
+    ms225 = []
+
+    max_possible_successes = sum([ROUND_MAX_SUCCESSES[i] for i in ROUND_MAX_SUCCESSES])
+
+    for uid in event_logs:
+
+        user_ms0 = 0
+        user_ms75 = 0
+        user_ms150 = 0
+        user_ms225 = 0
+        
+        for round in event_logs[uid]:
+            last = int(round.iloc[-1]["Coins"])
+            first = int(round.iloc[0]["Coins"])
+            n_successes = int((last - first) / 100.0)
+            match(int(round["ExpectedLag"].iloc[1])):
+                case 0:
+                    user_ms0 += n_successes
+                case 75:
+                    user_ms75 += n_successes
+                case 150:
+                    user_ms150 += n_successes
+                case 225:
+                    user_ms225 += n_successes
+
+        ms0.append(user_ms0 / max_possible_successes)
+        ms75.append(user_ms75 / max_possible_successes)
+        ms150.append(user_ms150 / max_possible_successes)
+        ms225.append(user_ms225 / max_possible_successes)
+
+    z = 0.95
+
+    # Standard deviations
+    sigma_0 = float(np.std(ms0))
+    sigma_75 = float(np.std(ms75))
+    sigma_150 = float(np.std(ms150))
+    sigma_225 = float(np.std(ms225))
+
+    n_0 = len(ms0)
+    n_75 = len(ms75)
+    n_150 = len(ms150)
+    n_225 = len(ms225)
+
+    # Confidence intervals
+    ci_0 = z * sigma_0 / math.sqrt(n_0)
+    ci_75 = z * sigma_75 / math.sqrt(n_75)
+    ci_150 = z * sigma_150 / math.sqrt(n_150)
+    ci_225 = z * sigma_225 / math.sqrt(n_225)
+
+    fig = plt.figure()
+
+    x = [0, 75, 150, 225]
+    y = [np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225)]
+
+    plt.scatter(x, y)
+    plt.plot(x, y)
+    plt.errorbar(x, y, yerr=[ci_0, ci_75, ci_150, ci_225], linewidth=1, capsize=4, fmt="none")
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+    
+    plt.ylim(0, 1)
+
+    plt.title("Success rate vs spike time")
+    plt.xlabel("Spike time (ms)")
+    plt.ylabel("Success rate")
+
+    fig.savefig("figures/success_rate_vs_spike_time.png")
+
+    plt.close("all")
+
+    print("Saved success rate vs spike time to figures/success_rate_vs_spike_time.png")
+
+    print("Generating success rate vs spike size per-round...")
+
+    # TODO
+
+    print("Saved success rate vs spike size per-round to figures/success_rate_vs_spike_size_per_round.png")
+    
 
 def success_distribution():
     """

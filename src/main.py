@@ -23,8 +23,9 @@ def main():
     print("Loaded Event Logs:", misc.LOG_MANAGER.cleaned_event_logs())
 
 
+    misc.success_rate_vs_spike_time()
     misc.qoe_distribution()
-    misc.compute_lag_differences()
+    # misc.compute_lag_differences()
     misc.success_distribution()
     misc.failure_distribution()
     misc.player_score_distribution()
