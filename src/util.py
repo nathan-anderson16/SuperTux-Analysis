@@ -46,6 +46,18 @@ For example, "five_five_five_level" can have a maximum of 16 successes.
 """
 
 
+ROUND_TYPES = {
+    "one_two_two_level": "Collect Power-Up",
+    "two_three_two_level": "Collect Power-Up",
+    "three_three_three_level": "Squish Enemy",
+    "three_three_five_level": "Jump Over Gap",
+    "three_four_five_level": "Jump Over Gap",
+    "two_five_five_level": "Jump Over Gap",
+    "four_four_five_level": "Special Jump",
+    "five_five_five_level": "Special Jump",
+}
+
+
 def _find_user_ids(path: Path):
     """
     Finds the user IDs (folder names) of each folder in the given path.

@@ -8,6 +8,7 @@ from util import (
     LOG_MANAGER,
     ROUND_MAX_SUCCESSES,
     ROUND_NAMES,
+    ROUND_TYPES,
     QoELog,
     Round,
     parse_timestamp,
@@ -418,7 +419,7 @@ def qoe_distribution():
     plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
     plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
 
-    plt.ylim((0, 5))
+    plt.ylim((1, 5))
 
     plt.tight_layout()
 
@@ -431,17 +432,6 @@ def qoe_distribution():
     all_round_logs = LOG_MANAGER.logs_per_round()
 
     print("Generating mean QoE per spike size per-task...")
-
-    round_types = {
-        "one_two_two_level": "Collect Power-Up",
-        "two_three_two_level": "Collect Power-Up",
-        "three_three_three_level": "Squish Enemy",
-        "three_three_five_level": "Jump Over Gap",
-        "three_four_five_level": "Jump Over Gap",
-        "two_five_five_level": "Jump Over Gap",
-        "four_four_five_level": "Special Jump",
-        "five_five_five_level": "Special Jump",
-    }
 
     fig = plt.figure(figsize=(5, 3.75))
 
@@ -459,13 +449,13 @@ def qoe_distribution():
             qoe: float = round.logs["qoe"].score
             match spike_duration:
                 case 0:
-                    qoes[round_types[level_name]][0].append(qoe)
+                    qoes[ROUND_TYPES[level_name]][0].append(qoe)
                 case 75:
-                    qoes[round_types[level_name]][1].append(qoe)
+                    qoes[ROUND_TYPES[level_name]][1].append(qoe)
                 case 150:
-                    qoes[round_types[level_name]][2].append(qoe)
+                    qoes[ROUND_TYPES[level_name]][2].append(qoe)
                 case 225:
-                    qoes[round_types[level_name]][3].append(qoe)
+                    qoes[ROUND_TYPES[level_name]][3].append(qoe)
 
     handles = []
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
@@ -544,11 +534,10 @@ def qoe_distribution():
     plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
     plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
 
-    plt.ylim((2, 5))
+    plt.ylim((1, 5))
 
     plt.tight_layout()
 
-    plt.show()
     fig.savefig("figures/mean_qoe_vs_spike_size_per_task.png")
     plt.close("all")
 
@@ -829,14 +818,110 @@ def success_rate_vs_spike_time():
 
     print("Saved success rate vs spike time to figures/success_rate_vs_spike_time.png")
 
-    # -----Success rate vs spike size for each round-----
+    # -----Success rate vs spike time per-task type-----
 
-    print("Generating success rate vs spike size per-round...")
+    print("Generating success rate vs spike time per-type...")
 
-    # TODO
+    ms0 = []
+    ms75 = []
+    ms150 = []
+    ms225 = []
+
+    success_rates: dict[str, list[list[float]]] = {
+        "Collect Power-Up": [[], [], [], []],
+        "Squish Enemy": [[], [], [], []],
+        "Jump Over Gap": [[], [], [], []],
+        "Special Jump": [[], [], [], []],
+    }
+
+    for uid in event_logs:
+        for round in event_logs[uid]:
+            last = int(round.iloc[-1]["Coins"])
+            first = int(round.iloc[0]["Coins"])
+            n_successes = int((last - first) / 100.0)
+
+            level_type = str(round.iloc[0]["Level"])
+            max_successes = ROUND_MAX_SUCCESSES[level_type]
+
+            success_rate = n_successes / max_successes
+
+            match int(round["ExpectedLag"].iloc[1]):
+                case 0:
+                    success_rates[ROUND_TYPES[level_type]][0].append(success_rate)
+                case 75:
+                    success_rates[ROUND_TYPES[level_type]][1].append(success_rate)
+                case 150:
+                    success_rates[ROUND_TYPES[level_type]][2].append(success_rate)
+                case 225:
+                    success_rates[ROUND_TYPES[level_type]][3].append(success_rate)
+
+    handles = []
+    markers = [".", "^", "s", "D"]
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+
+    fig = plt.figure()
+
+    for a, type in enumerate(success_rates.keys()):
+        ms0 = success_rates[type][0]
+        ms75 = success_rates[type][1]
+        ms150 = success_rates[type][2]
+        ms225 = success_rates[type][3]
+
+        print(type, np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225))
+
+        z = 0.95
+
+        # Standard deviations
+        sigma_0 = float(np.std(ms0))
+        sigma_75 = float(np.std(ms75))
+        sigma_150 = float(np.std(ms150))
+        sigma_225 = float(np.std(ms225))
+
+        n_0 = len(ms0)
+        n_75 = len(ms75)
+        n_150 = len(ms150)
+        n_225 = len(ms225)
+
+        # Confidence intervals
+        ci_0 = z * sigma_0 / math.sqrt(n_0)
+        ci_75 = z * sigma_75 / math.sqrt(n_75)
+        ci_150 = z * sigma_150 / math.sqrt(n_150)
+        ci_225 = z * sigma_225 / math.sqrt(n_225)
+
+        x = [0, 75, 150, 225]
+        y = [np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225)]
+
+        handle = plt.scatter(x, y, marker=markers[a])
+        plt.plot(x, y)
+        plt.errorbar(
+            x,
+            y,
+            yerr=[ci_0, ci_75, ci_150, ci_225],
+            linewidth=1,
+            capsize=4,
+            fmt="none",
+            color=colors[a],
+        )
+
+        handles.append(handle)
+
+    plt.legend(handles, success_rates.keys())
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    plt.ylim(0, 1)
+
+    plt.title("Success Rate vs Spike Time Per-Task")
+    plt.xlabel("Spike time (ms)")
+    plt.ylabel("Success rate")
+
+    fig.savefig("figures/success_rate_vs_spike_time_per_task.png")
+
+    plt.close("all")
 
     print(
-        "Saved success rate vs spike size per-round to figures/success_rate_vs_spike_size_per_round.png"
+        "Saved success rate vs spike time to figures/success_rate_vs_spike_time_per_task.png"
     )
 
 
