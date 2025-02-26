@@ -4,7 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from util import LOG_MANAGER, ROUND_MAX_SUCCESSES, ROUND_NAMES, QoELog, Round, parse_timestamp
+from util import (
+    LOG_MANAGER,
+    ROUND_MAX_SUCCESSES,
+    ROUND_NAMES,
+    QoELog,
+    Round,
+    parse_timestamp,
+)
 
 
 def qoe_distribution():
@@ -277,7 +284,9 @@ def qoe_distribution():
     axs[0].set_xlabel("QoE Score")
     axs[0].set_ylabel("Density")
     axs[0].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
-    axs[0].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+    axs[0].set_yticks(
+        [0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"]
+    )
 
     pd.Series(qoe_ms75).plot(
         kind="density",
@@ -291,7 +300,9 @@ def qoe_distribution():
     axs[1].set_xlabel("QoE Score")
     axs[1].set_ylabel("Density")
     axs[1].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
-    axs[1].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+    axs[1].set_yticks(
+        [0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"]
+    )
 
     pd.Series(qoe_ms150).plot(
         kind="density",
@@ -305,7 +316,9 @@ def qoe_distribution():
     axs[2].set_xlabel("QoE Score")
     axs[2].set_ylabel("Density")
     axs[2].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
-    axs[2].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+    axs[2].set_yticks(
+        [0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"]
+    )
 
     pd.Series(qoe_ms225).plot(
         kind="density",
@@ -319,7 +332,9 @@ def qoe_distribution():
     axs[3].set_xlabel("QoE Score")
     axs[3].set_ylabel("Density")
     axs[3].set_xticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
-    axs[3].set_yticks([0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"])
+    axs[3].set_yticks(
+        [0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"]
+    )
 
     fig.suptitle("Distribution of QoE Scores Per-Spike Size")
 
@@ -327,7 +342,9 @@ def qoe_distribution():
     fig.savefig("figures/qoe_distribution_per_spike_size.png")
     plt.close()
 
-    print("Saved QoE distribution per spike size to figures/qoe_distribution_per_spike_size.png")
+    print(
+        "Saved QoE distribution per spike size to figures/qoe_distribution_per_spike_size.png"
+    )
 
     # -----QoE Distribution vs Spike Size-----
     print("Generating QoE distribution vs spike size...")
@@ -389,11 +406,13 @@ def qoe_distribution():
     plt.scatter(x, y, s=10)
     plt.plot(x, y)
     # , color="#1f77b4", color="#ff7f0e"
-    plt.errorbar(x, y, yerr=[ci_0, ci_75, ci_150, ci_225], linewidth=1, capsize=4, fmt="none")
+    plt.errorbar(
+        x, y, yerr=[ci_0, ci_75, ci_150, ci_225], linewidth=1, capsize=4, fmt="none"
+    )
     # plt.errorbar(x, y, yerr=[sigma_0, sigma_75, sigma_150, sigma_225], fmt='o', color="#1f77b4")
 
     plt.xlabel("Spike Duration")
-    plt.ylabel("Mean QoE Score")
+    plt.ylabel("QoE Score")
     plt.title("Mean QoE Score vs Spike Duration")
 
     plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
@@ -407,7 +426,6 @@ def qoe_distribution():
     plt.close()
 
     print("Saved mean QoE vs spike size to figures/mean_qoe_vs_spike_size.png")
-    
 
 
 def compute_lag_differences():
@@ -455,6 +473,7 @@ def compute_lag_differences():
 
     plt.close()
 
+
 def success_rate():
     """
     Successes rate per-user and per-round.
@@ -473,10 +492,10 @@ def success_rate():
         success_rate[uid] = int((last - first) / 100.0)
 
     total_max = 0
-    for max_value in ROUND_MAX_SUCCESSES.values() :
+    for max_value in ROUND_MAX_SUCCESSES.values():
         total_max += max_value
 
-    for (uid, total) in success_rate.items() :
+    for uid, total in success_rate.items():
         success_rate[uid] = total / (total_max * 4)
 
     plt.figure(figsize=(14, 12))
@@ -496,8 +515,15 @@ def success_rate():
         plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
 
     # It looks like it’s z * s / sqrt(n)
-    plt.errorbar([i for i in range(len(success_rate))], success_counts, yerr=[0.95 * np.std(success_counts) / len(success_counts)**0.5 for i in range(len(success_counts))])
-    
+    plt.errorbar(
+        [i for i in range(len(success_rate))],
+        success_counts,
+        yerr=[
+            0.95 * np.std(success_counts) / len(success_counts) ** 0.5
+            for i in range(len(success_counts))
+        ],
+    )
+
     # Set yticks to every 0.5 units
     plt.yticks([i * 0.1 for i in range(0, 10 + 1)])
 
@@ -510,9 +536,7 @@ def success_rate():
 
     plt.savefig("figures/success_rate_per_user.png")
 
-    print(
-        "Saved success rate per-user to figures/success_rate_per_user.png"
-    )
+    print("Saved success rate per-user to figures/success_rate_per_user.png")
 
     plt.close()
 
@@ -538,10 +562,12 @@ def success_rate():
 
             round_success_rate[rounds[round_name][0].level_name] += n_successes
 
-    for (round_name, successes) in round_success_rate.items() :
-        round_success_rate[round_name] = successes / (ROUND_MAX_SUCCESSES[round_name] * 4 * len(success_rate.keys()))
+    for round_name, successes in round_success_rate.items():
+        round_success_rate[round_name] = successes / (
+            ROUND_MAX_SUCCESSES[round_name] * 4 * len(success_rate.keys())
+        )
 
-    plt.figure(figsize=(14, 12))
+    plt.figure()
 
     count_uid = [(round_success_rate[k], k) for k in round_success_rate.keys()]
     sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
@@ -551,32 +577,45 @@ def success_rate():
 
     _, ymax = plt.ylim()
     plt.ylim(0, ymax)
-    
+
     # It looks like it’s z * s / sqrt(n)
-    plt.errorbar([i for i in range(len(round_success_rate))], success_counts, yerr=[0.95 * np.std(success_counts) / len(success_counts)**0.5 for i in range(len(success_counts))])
-    
+    plt.errorbar(
+        [i for i in range(len(round_success_rate))],
+        success_counts,
+        capsize=4,
+        yerr=[
+            0.95 * np.std(success_counts) / len(success_counts) ** 0.5
+            for _ in range(len(success_counts))
+        ],
+    )
+
     # Draw lines from each data point to the graph.
     # `zorder` (Z-order) makes the lines draw below the points created with scatter().
-    for i, count in enumerate(success_counts):
-        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+    # for i, count in enumerate(success_counts):
+    #     plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
 
     # Set yticks to every 25 units
     plt.yticks([i * 0.1 for i in range(0, 10 + 1)])
 
     plt.xticks(
-        ticks=[i for i in range(len(round_success_rate))], labels=[k[1] for k in sorted_uids]
+        ticks=[i for i in range(len(round_success_rate))],
+        labels=[ROUND_NAMES[k[1]] for k in sorted_uids],
+        fontsize=9,
     )
 
-    plt.xlabel("Round ID")
+    plt.setp(plt.xticks()[1], rotation=30, horizontalalignment="right")
+
+    plt.xlabel("Task")
     plt.ylabel("Success Rate")
+
+    plt.tight_layout()
 
     plt.savefig("figures/success_rate_per_round.png")
 
-    print(
-        "Saved success rate per-round to figures/success_rate_per_round.png"
-    )
+    print("Saved success rate per-round to figures/success_rate_per_round.png")
 
     plt.close()
+
 
 def success_rate_vs_spike_time():
     """
@@ -596,17 +635,16 @@ def success_rate_vs_spike_time():
     max_possible_successes = sum([ROUND_MAX_SUCCESSES[i] for i in ROUND_MAX_SUCCESSES])
 
     for uid in event_logs:
-
         user_ms0 = 0
         user_ms75 = 0
         user_ms150 = 0
         user_ms225 = 0
-        
+
         for round in event_logs[uid]:
             last = int(round.iloc[-1]["Coins"])
             first = int(round.iloc[0]["Coins"])
             n_successes = int((last - first) / 100.0)
-            match(int(round["ExpectedLag"].iloc[1])):
+            match int(round["ExpectedLag"].iloc[1]):
                 case 0:
                     user_ms0 += n_successes
                 case 75:
@@ -647,11 +685,13 @@ def success_rate_vs_spike_time():
 
     plt.scatter(x, y)
     plt.plot(x, y)
-    plt.errorbar(x, y, yerr=[ci_0, ci_75, ci_150, ci_225], linewidth=1, capsize=4, fmt="none")
+    plt.errorbar(
+        x, y, yerr=[ci_0, ci_75, ci_150, ci_225], linewidth=1, capsize=4, fmt="none"
+    )
 
     plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
     plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
-    
+
     plt.ylim(0, 1)
 
     plt.title("Success rate vs spike time")
@@ -670,8 +710,10 @@ def success_rate_vs_spike_time():
 
     # TODO
 
-    print("Saved success rate vs spike size per-round to figures/success_rate_vs_spike_size_per_round.png")
-    
+    print(
+        "Saved success rate vs spike size per-round to figures/success_rate_vs_spike_size_per_round.png"
+    )
+
 
 def success_distribution():
     """
@@ -746,7 +788,7 @@ def success_distribution():
 
             round_successes[round_id] += n_successes
 
-    plt.scatter([i for i in range(len(round_successes))], success_counts)
+    plt.scatter([i for i in range(len(success_counts))], success_counts)
 
     _, ymax = plt.ylim()
     plt.ylim(0, ymax)
