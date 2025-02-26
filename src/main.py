@@ -22,9 +22,8 @@ def main():
     plt.rcParams.update({"font.size": 10})
     print("Loaded Event Logs:", misc.LOG_MANAGER.cleaned_event_logs())
 
-
-    misc.success_rate_vs_spike_time()
     misc.qoe_distribution()
+    misc.success_rate_vs_spike_time()
     # misc.compute_lag_differences()
     misc.success_distribution()
     misc.success_rate()
@@ -34,6 +33,7 @@ def main():
     ivdv.graph_failure_distribution()
     ivdv.graph_success_rate()
     ivdv.graph_acceptability()
+
 
 if __name__ == "__main__":
     main()

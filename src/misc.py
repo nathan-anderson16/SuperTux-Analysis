@@ -427,6 +427,131 @@ def qoe_distribution():
 
     print("Saved mean QoE vs spike size to figures/mean_qoe_vs_spike_size.png")
 
+    # -----QoE distribution vs spike size per-task-----
+    all_round_logs = LOG_MANAGER.logs_per_round()
+
+    print("Generating mean QoE per spike size per-task...")
+
+    round_types = {
+        "one_two_two_level": "Collect Power-Up",
+        "two_three_two_level": "Collect Power-Up",
+        "three_three_three_level": "Squish Enemy",
+        "three_three_five_level": "Jump Over Gap",
+        "three_four_five_level": "Jump Over Gap",
+        "two_five_five_level": "Jump Over Gap",
+        "four_four_five_level": "Special Jump",
+        "five_five_five_level": "Special Jump",
+    }
+
+    fig = plt.figure(figsize=(5, 3.75))
+
+    qoes: dict[str, list[list[float]]] = {
+        "Collect Power-Up": [[], [], [], []],
+        "Squish Enemy": [[], [], [], []],
+        "Jump Over Gap": [[], [], [], []],
+        "Special Jump": [[], [], [], []],
+    }
+
+    for round_id in all_round_logs:
+        level_name, spike_duration = Round.from_unique_id(round_id)
+
+        for round in all_round_logs[round_id]:
+            qoe: float = round.logs["qoe"].score
+            match spike_duration:
+                case 0:
+                    qoes[round_types[level_name]][0].append(qoe)
+                case 75:
+                    qoes[round_types[level_name]][1].append(qoe)
+                case 150:
+                    qoes[round_types[level_name]][2].append(qoe)
+                case 225:
+                    qoes[round_types[level_name]][3].append(qoe)
+
+    handles = []
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+    markers = [".", "^", "s", "D"]
+
+    for a, type in enumerate(qoes.keys()):
+        qoe_ms0 = qoes[type][0]
+        qoe_ms75 = qoes[type][1]
+        qoe_ms150 = qoes[type][2]
+        qoe_ms225 = qoes[type][3]
+
+        for i in range(1, 33, 4):
+            ms0 = all_round_logs[i]
+            ms75 = all_round_logs[i + 1]
+            ms150 = all_round_logs[i + 2]
+            ms225 = all_round_logs[i + 3]
+
+            m0 = [log.logs["qoe"].score for log in ms0]
+            m75 = [log.logs["qoe"].score for log in ms75]
+            m150 = [log.logs["qoe"].score for log in ms150]
+            m225 = [log.logs["qoe"].score for log in ms225]
+
+            qoe_ms0.extend(m0)
+            qoe_ms75.extend(m75)
+            qoe_ms150.extend(m150)
+            qoe_ms225.extend(m225)
+
+        z = 0.95
+
+        # Standard deviations
+        sigma_0 = float(np.std(qoe_ms0))
+        sigma_75 = float(np.std(qoe_ms75))
+        sigma_150 = float(np.std(qoe_ms150))
+        sigma_225 = float(np.std(qoe_ms225))
+
+        n_0 = len(qoe_ms0)
+        n_75 = len(qoe_ms75)
+        n_150 = len(qoe_ms150)
+        n_225 = len(qoe_ms225)
+
+        # Confidence intervals
+        ci_0 = z * sigma_0 / math.sqrt(n_0)
+        ci_75 = z * sigma_75 / math.sqrt(n_75)
+        ci_150 = z * sigma_150 / math.sqrt(n_150)
+        ci_225 = z * sigma_225 / math.sqrt(n_225)
+
+        x = [0, 75, 150, 225]
+        y = [
+            float(np.mean(qoe_ms0)),
+            float(np.mean(qoe_ms75)),
+            float(np.mean(qoe_ms150)),
+            float(np.mean(qoe_ms225)),
+        ]
+
+        handle = plt.scatter(x, y, s=12, marker=markers[a])
+        plt.plot(x, y)
+        # , color="#1f77b4", color="#ff7f0e"
+        # plt.errorbar(
+        #     x,
+        #     y,
+        #     yerr=[ci_0, ci_75, ci_150, ci_225],
+        #     linewidth=1,
+        #     capsize=4,
+        #     fmt="none",
+        #     color=colors[a],
+        # )
+        # plt.errorbar(x, y, yerr=[sigma_0, sigma_75, sigma_150, sigma_225], fmt='o', color="#1f77b4")
+        handles.append(handle)
+
+    plt.legend(handles, qoes.keys())
+
+    plt.xlabel("Spike Duration")
+    plt.ylabel("QoE Score")
+    plt.title("Mean QoE Score vs Spike Duration Per-Task")
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+
+    plt.ylim((2, 5))
+
+    plt.tight_layout()
+
+    plt.show()
+    fig.savefig("figures/mean_qoe_vs_spike_size_per_task.png")
+    plt.close("all")
+
 
 def compute_lag_differences():
     """
