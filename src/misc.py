@@ -462,6 +462,8 @@ def success_rate_vs_spike_time():
     """
     event_logs = LOG_MANAGER.cleaned_event_logs()
 
+    # -----Success rate vs spike size-----
+
     print("Generating success rate vs spike time...")
 
     ms0 = []
@@ -539,6 +541,8 @@ def success_rate_vs_spike_time():
     plt.close("all")
 
     print("Saved success rate vs spike time to figures/success_rate_vs_spike_time.png")
+
+    # -----Success rate vs spike size for each round-----
 
     print("Generating success rate vs spike size per-round...")
 
