@@ -728,7 +728,52 @@ def success_rate():
 
     plt.close()
 
+def qoe_score_vs_acceptability() :
 
+    all_qoe_logs = LOG_MANAGER.qoe_logs()
+
+    # -----Overall QoE Score Distribution-----
+    print("Generating overall QoE score distribution...")
+
+    all_scores = {}
+    for uid in all_qoe_logs:
+        logs = all_qoe_logs[uid]
+        for log in logs:
+            if log.score in all_scores.keys() :
+                all_scores[log.score].append(log.acceptable)
+            else :
+                all_scores[log.score] = [log.acceptable]
+            
+    for (score, acceptability) in all_scores.items():
+        all_scores[score] = acceptability.count(True) / len(acceptability)
+
+    plt.figure()
+
+    count_uid = [(all_scores[k], k) for k in all_scores.keys()]
+    sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
+    keys = [k[1] for k in sorted_uids]
+    success_counts = [k[0] for k in sorted_uids]
+
+    plt.scatter(keys, success_counts)
+
+    poly_fit = np.poly1d(np.polyfit(keys, success_counts, 3))
+
+    plt.plot(sorted(keys), [poly_fit(key) for key in sorted(keys)])
+   
+    plt.yticks([i * 0.1 for i in range(0, 10 + 1)])
+    plt.xticks([1, 2, 3, 4, 5])
+
+    plt.xlabel("QoE Score")
+    plt.ylabel("Acceptibility Rate")
+
+    plt.tight_layout()
+
+    plt.savefig("figures/qoe_score_vs_acceptability.png")
+
+    print("Saved success rate per-task to figures/qoe_score_vs_acceptability.png")
+
+    plt.close()
+    
 def success_rate_vs_spike_time():
     """
     Success rate vs spike time

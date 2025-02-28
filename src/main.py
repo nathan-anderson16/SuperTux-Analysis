@@ -29,6 +29,7 @@ def main():
     misc.success_rate()
     misc.failure_distribution()
     misc.player_score_distribution()
+    misc.qoe_score_vs_acceptability()
     ivdv.graph_success_distribution()
     ivdv.graph_failure_distribution()
     ivdv.graph_success_rate()
