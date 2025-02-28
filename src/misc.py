@@ -656,7 +656,7 @@ def success_rate():
 
     # ----------Success distribution per-round----------
 
-    print("Generating success rate per-round...")
+    print("Generating success rate per-task...")
 
     rounds = LOG_MANAGER.logs_per_round()
 
@@ -724,9 +724,9 @@ def success_rate():
 
     plt.tight_layout()
 
-    plt.savefig("figures/success_rate_per_round.png")
+    plt.savefig("figures/success_rate_per_task.png")
 
-    print("Saved success rate per-round to figures/success_rate_per_round.png")
+    print("Saved success rate per-task to figures/success_rate_per_round.png")
 
     plt.close()
 
