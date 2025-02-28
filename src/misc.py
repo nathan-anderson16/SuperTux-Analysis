@@ -665,7 +665,7 @@ def success_rate():
     for round_name in rounds:
         logs = rounds[round_name]
 
-        round_success_rate[rounds[round_name][0].level_name] = 0
+        round_success_rate[rounds[round_name][0].level_name] = []
 
         for round in logs:
             df: pd.DataFrame = round.logs["event"]
@@ -674,12 +674,10 @@ def success_rate():
             end_num = int(df["Coins"].iloc[-1])
             n_successes = int((end_num - start_num) / 100)
 
-            round_success_rate[rounds[round_name][0].level_name] += n_successes
+            round_success_rate[rounds[round_name][0].level_name].append(n_successes / ROUND_MAX_SUCCESSES[rounds[round_name][0].level_name])
 
     for round_name, successes in round_success_rate.items():
-        round_success_rate[round_name] = successes / (
-            ROUND_MAX_SUCCESSES[round_name] * 4 * len(success_rate.keys())
-        )
+        round_success_rate[round_name] = np.mean(successes)
 
     plt.figure()
 
