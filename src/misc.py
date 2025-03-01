@@ -674,7 +674,9 @@ def success_rate():
             end_num = int(df["Coins"].iloc[-1])
             n_successes = int((end_num - start_num) / 100)
 
-            round_success_rate[rounds[round_name][0].level_name].append(n_successes / ROUND_MAX_SUCCESSES[rounds[round_name][0].level_name])
+            round_success_rate[rounds[round_name][0].level_name].append(
+                n_successes / ROUND_MAX_SUCCESSES[rounds[round_name][0].level_name]
+            )
 
     for round_name, successes in round_success_rate.items():
         round_success_rate[round_name] = np.mean(successes)
@@ -728,8 +730,8 @@ def success_rate():
 
     plt.close()
 
-def qoe_score_vs_acceptability() :
 
+def qoe_score_vs_acceptability():
     all_qoe_logs = LOG_MANAGER.qoe_logs()
 
     # -----Overall QoE Score Distribution-----
@@ -739,12 +741,12 @@ def qoe_score_vs_acceptability() :
     for uid in all_qoe_logs:
         logs = all_qoe_logs[uid]
         for log in logs:
-            if log.score in all_scores.keys() :
+            if log.score in all_scores.keys():
                 all_scores[log.score].append(log.acceptable)
-            else :
+            else:
                 all_scores[log.score] = [log.acceptable]
-            
-    for (score, acceptability) in all_scores.items():
+
+    for score, acceptability in all_scores.items():
         all_scores[score] = acceptability.count(True) / len(acceptability)
 
     plt.figure()
@@ -759,7 +761,7 @@ def qoe_score_vs_acceptability() :
     poly_fit = np.poly1d(np.polyfit(keys, success_counts, 3))
 
     plt.plot(sorted(keys), [poly_fit(key) for key in sorted(keys)])
-   
+
     plt.yticks([i * 0.1 for i in range(0, 10 + 1)])
     plt.xticks([1, 2, 3, 4, 5])
 
@@ -773,7 +775,8 @@ def qoe_score_vs_acceptability() :
     print("Saved success rate per-task to figures/qoe_score_vs_acceptability.png")
 
     plt.close()
-    
+
+
 def success_rate_vs_spike_time():
     """
     Success rate vs spike time
@@ -985,7 +988,7 @@ def success_distribution():
         first = int(event_logs[uid][0].iloc[0]["Coins"])
         successes[uid] = int((last - first) / 100.0)
 
-    plt.figure(figsize=(14, 12))
+    plt.figure(figsize=(7, 6))
 
     count_uid = [(successes[k], k) for k in successes.keys()]
     sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
@@ -1005,11 +1008,15 @@ def success_distribution():
     plt.yticks([i * 25 for i in range(0, math.ceil(max(success_counts) / 25.0) + 1)])
 
     plt.xticks(
-        ticks=[i for i in range(len(successes))], labels=[k[1] for k in sorted_uids]
+        ticks=[i for i in range(len(successes))],
+        labels=[k[1] for k in sorted_uids],
+        fontsize=8,
     )
 
     plt.xlabel("User ID")
     plt.ylabel("Number of Successes")
+
+    plt.setp(plt.xticks()[1], rotation=40, horizontalalignment="right")
 
     plt.savefig("figures/success_distribution_per_user.png")
 
@@ -1021,53 +1028,53 @@ def success_distribution():
 
     # ----------Success distribution per-round----------
 
-    print("Generating success distribution per-round...")
+    # print("Generating success distribution per-round...")
 
-    rounds = LOG_MANAGER.logs_per_round()
+    # rounds = LOG_MANAGER.logs_per_round()
 
-    round_successes: dict[int, int] = dict()
+    # round_successes: dict[int, int] = dict()
 
-    for round_id in rounds:
-        logs = rounds[round_id]
+    # for round_id in rounds:
+    #     logs = rounds[round_id]
 
-        round_successes[round_id] = 0
+    #     round_successes[round_id] = 0
 
-        for round in logs:
-            df: pd.DataFrame = round.logs["event"]
+    #     for round in logs:
+    #         df: pd.DataFrame = round.logs["event"]
 
-            start_num = int(df["Coins"].iloc[0])
-            end_num = int(df["Coins"].iloc[-1])
-            n_successes = int((end_num - start_num) / 100)
+    #         start_num = int(df["Coins"].iloc[0])
+    #         end_num = int(df["Coins"].iloc[-1])
+    #         n_successes = int((end_num - start_num) / 100)
 
-            round_successes[round_id] += n_successes
+    #         round_successes[round_id] += n_successes
 
-    plt.scatter([i for i in range(len(success_counts))], success_counts)
+    # plt.scatter([i for i in range(len(success_counts))], success_counts)
 
-    _, ymax = plt.ylim()
-    plt.ylim(0, ymax)
+    # _, ymax = plt.ylim()
+    # plt.ylim(0, ymax)
 
-    # Draw lines from each data point to the graph.
-    # `zorder` (Z-order) makes the lines draw below the points created with scatter().
-    for i, count in enumerate(success_counts):
-        plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
+    # # Draw lines from each data point to the graph.
+    # # `zorder` (Z-order) makes the lines draw below the points created with scatter().
+    # for i, count in enumerate(success_counts):
+    #     plt.vlines(i, 0, count, linewidth=0.5, colors=["black"], zorder=0)
 
-    # Set yticks to every 25 units
-    plt.yticks([i * 25 for i in range(0, math.ceil(max(success_counts) / 25.0) + 1)])
+    # # Set yticks to every 25 units
+    # plt.yticks([i * 25 for i in range(0, math.ceil(max(success_counts) / 25.0) + 1)])
 
-    plt.xticks(
-        ticks=[i for i in range(len(successes))], labels=[k[1] for k in sorted_uids]
-    )
+    # plt.xticks(
+    #     ticks=[i for i in range(len(successes))], labels=[k[1] for k in sorted_uids]
+    # )
 
-    plt.xlabel("User ID")
-    plt.ylabel("Number of Successes")
+    # plt.xlabel("User ID")
+    # plt.ylabel("Number of Successes")
 
-    plt.savefig("figures/success_distribution_per_user.png")
+    # plt.savefig("figures/success_distribution_per_user.png")
 
-    print(
-        "Saved success distribution per-user to figures/success_distribution_per_user.png"
-    )
+    # print(
+    #     "Saved success distribution per-user to figures/success_distribution_per_user.png"
+    # )
 
-    plt.close()
+    # plt.close()
 
 
 def failure_distribution():
