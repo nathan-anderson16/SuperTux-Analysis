@@ -139,12 +139,16 @@ def player_round_activity_outliers() :
     player_entry_average = np.average(list_of_all_rounds)
     player_entry_std = np.std(list_of_all_rounds)
 
+    count = 0
     for (user_id, data) in player_round_entry_averages.items() :
         for (round_id, entries) in data.items() :
             if entries < player_entry_average - player_entry_std or entries > player_entry_average + player_entry_std :
-                print(user_id, round_id, entries)
+                if not round_id in ["three_three_three_level", "three_three_five_level", "two_five_five_level"] :
+                    print(user_id, round_id, entries)
+                    count += 1
                 outliers.append((user_id, round_id))
     print(player_entry_average, player_entry_std)
+    print(count)
     return outliers
 
 def print_outliers() :

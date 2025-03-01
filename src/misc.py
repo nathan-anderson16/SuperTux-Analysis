@@ -14,6 +14,154 @@ from util import (
     parse_timestamp,
 )
 
+def demographics_info() :
+    """
+    Collects demographics info from CSV    
+    """
+    file = open("./Results/Demographics Survey (Responses) - Form Responses 1.csv", 'r')
+
+    first_line = file.readline()[:-1]
+    first_line = first_line.split(',')
+    results = {}    
+    for line in file :
+        
+        first_quote = line.find('"')
+        line = line[:first_quote] + line[line.find('"', first_quote + 1):-1]
+        parsed = line.split(',')
+        results[parsed[1]] = {}
+        player_file = open("./Results/" + parsed[1] + "/" + parsed[1] + ".txt", 'r')
+        
+        reaction_time_data = player_file.readline().split(',')
+        results[parsed[1]]['Reaction Time'] = int(np.mean([int(s) for s in reaction_time_data[:-1]]))
+            
+        for i in range(2, 7) :
+            results[parsed[1]][first_line[i]] = parsed[i]
+
+    return results
+
+def reaction_time_vs_score(demo_info) :
+    all_event_logs = LOG_MANAGER.cleaned_event_logs()
+
+    player_scores = {}
+    for uid in all_event_logs:
+        last = int(all_event_logs[uid][-1].iloc[-1]["Coins"])
+        first = int(all_event_logs[uid][0].iloc[0]["Coins"])
+        player_scores[uid] = int((last - first) / 100.0)
+    
+    total_max = 0
+    for max_value in ROUND_MAX_SUCCESSES.values():
+        total_max += max_value
+
+    for uid, total in player_scores.items():
+        player_scores[uid] = total / (total_max * 4)
+    
+    # (experience, score)
+    graphable_data = []
+    for (uid, scores) in player_scores.items() :
+        graphable_data.append((int(demo_info[uid]["Reaction Time"]), np.mean(scores)))
+
+    plt.figure()
+
+    plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
+        
+    plt.yticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        
+    plt.xlabel("Reaction Time")
+    plt.ylabel("Score")
+
+    plt.tight_layout()
+
+    plt.savefig("figures/reaction_time_vs_score.png")
+    
+def reaction_time_vs_qoe(demo_info) :
+    all_qoe_logs = LOG_MANAGER.qoe_logs()
+
+    player_qoe_scores = {}
+    for uid in all_qoe_logs:
+        logs = all_qoe_logs[uid]
+        player_qoe_scores[uid] = []
+        for log in logs:
+            player_qoe_scores[uid].append(log.score)
+    # (experience, score)
+    graphable_data = []
+    for (uid, scores) in player_qoe_scores.items() :
+        graphable_data.append((int(demo_info[uid]["Reaction Time"]), np.mean(scores)))
+
+    plt.figure()
+
+    plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
+        
+    plt.yticks([1, 2, 3, 4, 5])
+        
+    plt.xlabel("Reaction Time")
+    plt.ylabel("QoE Score")
+
+    plt.tight_layout()
+
+    plt.savefig("figures/reaction_time_vs_qoe.png")
+    
+def platformer_experience_vs_score(demo_info) :
+    all_event_logs = LOG_MANAGER.cleaned_event_logs()
+
+    player_scores = {}
+    for uid in all_event_logs:
+        last = int(all_event_logs[uid][-1].iloc[-1]["Coins"])
+        first = int(all_event_logs[uid][0].iloc[0]["Coins"])
+        player_scores[uid] = int((last - first) / 100.0)
+    
+    total_max = 0
+    for max_value in ROUND_MAX_SUCCESSES.values():
+        total_max += max_value
+
+    for uid, total in player_scores.items():
+        player_scores[uid] = total / (total_max * 4)
+    
+    # (experience, score)
+    graphable_data = []
+    for (uid, scores) in player_scores.items() :
+        graphable_data.append((int(demo_info[uid]["How much experience do you have playing 2D platformers?"]), np.mean(scores)))
+
+    plt.figure()
+
+    plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
+        
+    plt.yticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+    plt.xticks([1, 2, 3, 4, 5])
+    
+    plt.xlabel("2D Platformer Experience")
+    plt.ylabel("Score")
+
+    plt.tight_layout()
+
+    plt.savefig("figures/platformer_experience_vs_score.png")
+    
+def platformer_experience_vs_qoe(demo_info) :
+    all_qoe_logs = LOG_MANAGER.qoe_logs()
+
+    player_qoe_scores = {}
+    for uid in all_qoe_logs:
+        logs = all_qoe_logs[uid]
+        player_qoe_scores[uid] = []
+        for log in logs:
+            player_qoe_scores[uid].append(log.score)
+    # (experience, score)
+    graphable_data = []
+    for (uid, scores) in player_qoe_scores.items() :
+        graphable_data.append((int(demo_info[uid]["How much experience do you have playing 2D platformers?"]), np.mean(scores)))
+
+    plt.figure()
+
+    plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
+        
+    plt.yticks([1, 2, 3, 4, 5])
+    plt.xticks([1, 2, 3, 4, 5])
+    
+    plt.xlabel("2D Platformer Experience")
+    plt.ylabel("QoE Score")
+
+    plt.tight_layout()
+
+    plt.savefig("figures/platformer_experience_vs_qoe.png")   
 
 def qoe_distribution():
     """
