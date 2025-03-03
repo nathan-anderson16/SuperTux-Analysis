@@ -525,7 +525,7 @@ def qoe_distribution():
         qoe_ms150.extend(m150)
         qoe_ms225.extend(m225)
 
-    z = 0.95
+    z = 1.96
 
     # Standard deviations
     sigma_0 = float(np.std(qoe_ms0))
@@ -631,7 +631,7 @@ def qoe_distribution():
             qoe_ms150.extend(m150)
             qoe_ms225.extend(m225)
 
-        z = 0.95
+        z = 1.96
 
         # Standard deviations
         sigma_0 = float(np.std(qoe_ms0))
@@ -661,15 +661,15 @@ def qoe_distribution():
         handle = plt.scatter(x, y, s=12, marker=markers[a])
         plt.plot(x, y)
         # , color="#1f77b4", color="#ff7f0e"
-        # plt.errorbar(
-        #     x,
-        #     y,
-        #     yerr=[ci_0, ci_75, ci_150, ci_225],
-        #     linewidth=1,
-        #     capsize=4,
-        #     fmt="none",
-        #     color=colors[a],
-        # )
+        plt.errorbar(
+            x,
+            y,
+            yerr=[ci_0, ci_75, ci_150, ci_225],
+            linewidth=1,
+            capsize=4,
+            fmt="none",
+            color=colors[a],
+        )
         # plt.errorbar(x, y, yerr=[sigma_0, sigma_75, sigma_150, sigma_225], fmt='o', color="#1f77b4")
         handles.append(handle)
 
@@ -781,7 +781,7 @@ def success_rate():
         [i for i in range(len(success_rate))],
         success_counts,
         yerr=[
-            0.95 * np.std(success_counts) / len(success_counts) ** 0.5
+            1.96 * np.std(success_counts) / len(success_counts) ** 0.5
             for i in range(len(success_counts))
         ],
     )
@@ -846,7 +846,7 @@ def success_rate():
         success_counts,
         capsize=4,
         yerr=[
-            0.95 * np.std(success_counts) / len(success_counts) ** 0.5
+            1.96 * np.std(success_counts) / len(success_counts) ** 0.5
             for _ in range(len(success_counts))
         ],
     )
@@ -967,7 +967,7 @@ def success_rate_vs_spike_time():
         ms150.append(user_ms150 / max_possible_successes)
         ms225.append(user_ms225 / max_possible_successes)
 
-    z = 0.95
+    z = 1.96
 
     # Standard deviations
     sigma_0 = float(np.std(ms0))
@@ -1063,7 +1063,7 @@ def success_rate_vs_spike_time():
 
         print(type, np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225))
 
-        z = 0.95
+        z = 1.96
 
         # Standard deviations
         sigma_0 = float(np.std(ms0))
