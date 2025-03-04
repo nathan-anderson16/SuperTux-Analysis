@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Union
 
 import pandas as pd
+import numpy as np
 import tqdm
 
 # Event log headers:
@@ -57,6 +58,15 @@ ROUND_TYPES = {
     "five_five_five_level": "Special Jump",
 }
 
+def compute_r2(y, trend_y) :
+    average = np.mean(y)
+    unexplained = 0
+    total = 0
+    for (i, value) in enumerate(trend_y) :
+        unexplained += (value - y[i])**2
+        total += (y[i] - average)**2
+
+    return 1 - (unexplained / total)
 
 def _find_user_ids(path: Path):
     """

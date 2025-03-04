@@ -9,6 +9,7 @@ dependencies = [
     "numpy>=2.2.2",
     "pandas>=2.2.3",
     'pyqt5>=5.15.11 ; platform_system != "Windows"',
+    "scikit-learn>=1.6.1",
     "scipy>=1.15.1",
     "tqdm>=4.67.1",
 ]
