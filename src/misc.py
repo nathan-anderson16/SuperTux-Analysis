@@ -1339,6 +1339,39 @@ def success_rate_vs_spike_time():
         "Saved success rate vs spike time to figures/success_rate_vs_spike_time_per_task.png"
     )
 
+    fig = plt.figure()
+
+    base = slope_equations_actual["Collect Power-Up"](0)
+
+    handles = []
+    x = [0, 75, 150, 225]
+    for (a, type) in enumerate(slope_equations_actual.keys()) :
+
+        offset = base - slope_equations_actual[type](0)
+
+        y_actual = [(slope_equations_actual[type](val) + offset) for val in x]
+
+        handle_actual = plt.scatter(x, y_actual, marker=markers[a])
+
+        plt.plot(x, y_actual)
+
+        handles.append(handle_actual)
+
+    plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([])
+
+    plt.ylim(0, 1)
+
+    plt.title("Comparison of Trendlines")
+    plt.xlabel("Spike time (ms)")
+    # plt.ylabel("Success rate")
+
+    fig.savefig("figures/slopes_success_rate_vs_spike_time_per_task.png")
+
+    plt.close("all")
+
     success_rates_by_task_actual = {
         "one_two_two_level": [[], [], [], []],
         "two_three_two_level": [[], [], [], []],
@@ -1558,8 +1591,15 @@ def success_rate_vs_spike_time():
     original_data = dict()
     r2_actual = dict()
     r2_practical = dict()
+
+    axs = fig.subplots(nrows = 2, ncols = 2)
+    row = 0
+    col = 0
     for a, type in enumerate(success_rates_actual.keys()):
-        fig = plt.figure()
+        ax = axs[row][col]
+
+        handles = []
+
         ms0_actual = success_rates_actual[type][0]
         ms75_actual = success_rates_actual[type][1]
         ms150_actual = success_rates_actual[type][2]
@@ -1569,8 +1609,6 @@ def success_rate_vs_spike_time():
         ms75_practical = success_rates_practical[type][1]
         ms150_practical = success_rates_practical[type][2]
         ms225_practical = success_rates_practical[type][3]
-
-        # print(type, np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual))
 
         z = 1.96
 
@@ -1619,31 +1657,53 @@ def success_rate_vs_spike_time():
 
         r2_practical[type] = round(compute_r2(y_practical, [slope_equations_practical[type](val) for val in x]), 3)
 
-        handle_actual = plt.scatter(x, y_actual, marker=markers[0])
+        handle_actual = ax.scatter(x, y_actual, marker=markers[0])
 
-        handle_practical = plt.scatter(x, y_practical, marker=markers[1])
+        handle_practical = ax.scatter(x, y_practical, marker=markers[1])
 
-        plt.plot(x, [slope_equations_actual[type](val) for val in x])
-        plt.plot(x, [slope_equations_practical[type](val) for val in x])
+        ax.plot(x, [slope_equations_actual[type](val) for val in x])
+        ax.plot(x, [slope_equations_practical[type](val) for val in x])
 
         handles.append(handle_actual)
         handles.append(handle_practical)
 
-        plt.legend(handles, ["Actual", "Practical"])
+        ax.legend(handles, ["Actual", "Practical"])
 
-        plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-        plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+        ax.set_xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+        ax.set_yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
 
-        plt.ylim(0, 1)
+        ax.set_ylim(0, 1)
 
-        plt.title(f"Actual And Practical Success Rate vs Spike Time {type}")
-        plt.xlabel("Spike time (ms)")
-        plt.ylabel("Success rate")
+        ax.set_title(f"{type}")
+        ax.set_xlabel("Spike time (ms)")
+        ax.set_ylabel("Success rate")
 
-        fig.savefig("figures/actual_and_practical_success_rate_vs_spike_time_per_task_" + type + ".png")
+        col += 1
+        if col >= 2 :
+            col = 0
+            row += 1
+    plt.tight_layout()
+    fig.savefig("figures/actual_and_practical_success_rate_vs_spike_time_per_task_combined.png")
 
+    plt.close("all")
+
+
+    fig = plt.figure(figsize=(16, 6))
+
+    slope_equations_actual = dict()
+    slope_equations_practical = dict()
+    original_data = dict()
+    r2_actual = dict()
+    r2_practical = dict()
+
+    axs = fig.subplots(nrows = 2, ncols = 4)
+    row = 0
+    col = 0
     for a, type in enumerate(success_rates_by_task_actual.keys()):
-        fig = plt.figure()
+        ax = axs[row][col]
+
+        handles = []
+
         ms0_actual = success_rates_by_task_actual[type][0]
         ms75_actual = success_rates_by_task_actual[type][1]
         ms150_actual = success_rates_by_task_actual[type][2]
@@ -1701,65 +1761,36 @@ def success_rate_vs_spike_time():
 
         r2_practical[type] = round(compute_r2(y_practical, [slope_equations_practical[type](val) for val in x]), 3)
 
-        handle_actual = plt.scatter(x, y_actual, marker=markers[0])
+        handle_actual = ax.scatter(x, y_actual, marker=markers[0])
 
-        handle_practical = plt.scatter(x, y_practical, marker=markers[1])
+        handle_practical = ax.scatter(x, y_practical, marker=markers[1])
 
-        plt.plot(x, [slope_equations_actual[type](val) for val in x])
-        plt.plot(x, [slope_equations_practical[type](val) for val in x])
+        ax.plot(x, [slope_equations_actual[type](val) for val in x])
+        ax.plot(x, [slope_equations_practical[type](val) for val in x])
 
         handles.append(handle_actual)
         handles.append(handle_practical)
 
-        plt.legend(handles, ["Actual", "Practical"])
+        ax.legend(handles, ["Actual", "Practical"])
 
-        plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-        plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+        ax.set_xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+        ax.set_yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
 
-        plt.ylim(0, 1)
+        ax.set_ylim(0, 1)
 
-        plt.title(f"Actual And Practical Success Rate vs Spike Time {ROUND_NAMES[type]}")
-        plt.xlabel("Spike time (ms)")
-        plt.ylabel("Success rate")
+        ax.set_title(f"{ROUND_NAMES[type]}")
+        ax.set_xlabel("Spike time (ms)")
+        ax.set_ylabel("Success rate")
 
-        fig.savefig("figures/actual_and_practical_success_rate_vs_spike_time_per_task_" + type + ".png")
+        col += 1
+        if col >= 4 :
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    fig.savefig("figures/actual_and_practical_success_rate_vs_spike_time_each_task_combined.png")
 
     plt.close("all")
-
-    print("Test 3")
-
-    # fig = plt.figure()
-
-    # base = slope_equations_actual["Collect Power-Up"](0)
-
-    # handles = []
-    # x = [0, 75, 150, 225]
-    # for (a, type) in enumerate(slope_equations_actual.keys()) :
-
-    #     offset = base - slope_equations_actual[type](0)
-
-    #     y_actual = [(slope_equations_actual[type](val) + offset) for val in x]
-
-    #     handle_actual = plt.scatter(x, y_actual, marker=markers[a])
-
-    #     plt.plot(x, y_actual)
-
-    #     handles.append(handle_actual)
-
-    # plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
-
-    # plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-    # plt.yticks([])
-
-    # plt.ylim(0, 1)
-
-    # plt.title("Comparison of Trendlines")
-    # plt.xlabel("Spike time (ms)")
-    # # plt.ylabel("Success rate")
-
-    # fig.savefig("figures/slopes_success_rate_vs_spike_time_per_task.png")
-
-    # plt.close("all")
 
     print(
         "Testing time :D"
