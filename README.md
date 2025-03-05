@@ -55,3 +55,10 @@ An example of the contents of the file is:
 
 # Figures
 Graphs are outputted to figures/.
+
+# Modifying / Adding Figures
+`src/util.py` contains a LOG_MANAGER, which manages logs. You'll probably want `LOG_MANAGER.qoe_logs()`, `LOG_MANAGER.rounds()`, or `LOG_MANAGER.logs_per_round()`.
+
+All results are cached, so there's no drawback to calling the same function multiple times.
+
+However, if you want to force reload the logs from disk, you can pass the parameter `force_reload=True`.
