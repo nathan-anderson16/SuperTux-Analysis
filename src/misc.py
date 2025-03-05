@@ -2,6 +2,7 @@ import math
 
 import matplotlib.pyplot as plt
 import numpy as np
+import sklearn as sk
 import pandas as pd
 
 from util import (
@@ -12,28 +13,29 @@ from util import (
     QoELog,
     Round,
     parse_timestamp,
+    compute_r2
 )
 
 def demographics_info() :
     """
-    Collects demographics info from CSV    
+    Collects demographics info from CSV
     """
     file = open("./Results/Demographics Survey (Responses) - Form Responses 1.csv", 'r')
 
     first_line = file.readline()[:-1]
     first_line = first_line.split(',')
-    results = {}    
+    results = {}
     for line in file :
-        
+
         first_quote = line.find('"')
         line = line[:first_quote] + line[line.find('"', first_quote + 1):-1]
         parsed = line.split(',')
         results[parsed[1]] = {}
         player_file = open("./Results/" + parsed[1] + "/" + parsed[1] + ".txt", 'r')
-        
+
         reaction_time_data = player_file.readline().split(',')
         results[parsed[1]]['Reaction Time'] = int(np.mean([int(s) for s in reaction_time_data[:-1]]))
-            
+
         for i in range(2, 7) :
             results[parsed[1]][first_line[i]] = parsed[i]
 
@@ -47,14 +49,14 @@ def reaction_time_vs_score(demo_info) :
         last = int(all_event_logs[uid][-1].iloc[-1]["Coins"])
         first = int(all_event_logs[uid][0].iloc[0]["Coins"])
         player_scores[uid] = int((last - first) / 100.0)
-    
+
     total_max = 0
     for max_value in ROUND_MAX_SUCCESSES.values():
         total_max += max_value
 
     for uid, total in player_scores.items():
         player_scores[uid] = total / (total_max * 4)
-    
+
     # (experience, score)
     graphable_data = []
     for (uid, scores) in player_scores.items() :
@@ -63,16 +65,16 @@ def reaction_time_vs_score(demo_info) :
     plt.figure()
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
-        
+
     plt.yticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-        
+
     plt.xlabel("Reaction Time")
     plt.ylabel("Score")
 
     plt.tight_layout()
 
     plt.savefig("figures/reaction_time_vs_score.png")
-    
+
 def reaction_time_vs_qoe(demo_info) :
     all_qoe_logs = LOG_MANAGER.qoe_logs()
 
@@ -90,16 +92,16 @@ def reaction_time_vs_qoe(demo_info) :
     plt.figure()
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
-        
+
     plt.yticks([1, 2, 3, 4, 5])
-        
+
     plt.xlabel("Reaction Time")
     plt.ylabel("QoE Score")
 
     plt.tight_layout()
 
     plt.savefig("figures/reaction_time_vs_qoe.png")
-    
+
 def platformer_experience_vs_score(demo_info) :
     all_event_logs = LOG_MANAGER.cleaned_event_logs()
 
@@ -108,14 +110,14 @@ def platformer_experience_vs_score(demo_info) :
         last = int(all_event_logs[uid][-1].iloc[-1]["Coins"])
         first = int(all_event_logs[uid][0].iloc[0]["Coins"])
         player_scores[uid] = int((last - first) / 100.0)
-    
+
     total_max = 0
     for max_value in ROUND_MAX_SUCCESSES.values():
         total_max += max_value
 
     for uid, total in player_scores.items():
         player_scores[uid] = total / (total_max * 4)
-    
+
     # (experience, score)
     graphable_data = []
     for (uid, scores) in player_scores.items() :
@@ -124,17 +126,17 @@ def platformer_experience_vs_score(demo_info) :
     plt.figure()
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
-        
+
     plt.yticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
     plt.xticks([1, 2, 3, 4, 5])
-    
+
     plt.xlabel("2D Platformer Experience")
     plt.ylabel("Score")
 
     plt.tight_layout()
 
     plt.savefig("figures/platformer_experience_vs_score.png")
-    
+
 def platformer_experience_vs_qoe(demo_info) :
     all_qoe_logs = LOG_MANAGER.qoe_logs()
 
@@ -152,16 +154,16 @@ def platformer_experience_vs_qoe(demo_info) :
     plt.figure()
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
-        
+
     plt.yticks([1, 2, 3, 4, 5])
     plt.xticks([1, 2, 3, 4, 5])
-    
+
     plt.xlabel("2D Platformer Experience")
     plt.ylabel("QoE Score")
 
     plt.tight_layout()
 
-    plt.savefig("figures/platformer_experience_vs_qoe.png")   
+    plt.savefig("figures/platformer_experience_vs_qoe.png")
 
 def qoe_distribution():
     """
@@ -525,7 +527,7 @@ def qoe_distribution():
         qoe_ms150.extend(m150)
         qoe_ms225.extend(m225)
 
-    z = 0.95
+    z = 1.96
 
     # Standard deviations
     sigma_0 = float(np.std(qoe_ms0))
@@ -583,6 +585,17 @@ def qoe_distribution():
 
     fig = plt.figure(figsize=(5, 3.75))
 
+    qoes_per_task: dict[str, list[list[float]]] = {
+        "one_two_two_level": [[], [], [], []],
+        "two_three_two_level": [[], [], [], []],
+        "three_three_three_level": [[], [], [], []],
+        "three_three_five_level": [[], [], [], []],
+        "three_four_five_level": [[], [], [], []],
+        "two_five_five_level": [[], [], [], []],
+        "four_four_five_level": [[], [], [], []],
+        "five_five_five_level": [[], [], [], []],
+    }
+
     qoes: dict[str, list[list[float]]] = {
         "Collect Power-Up": [[], [], [], []],
         "Squish Enemy": [[], [], [], []],
@@ -593,17 +606,21 @@ def qoe_distribution():
     for round_id in all_round_logs:
         level_name, spike_duration = Round.from_unique_id(round_id)
 
-        for round in all_round_logs[round_id]:
-            qoe: float = round.logs["qoe"].score
+        for current_round in all_round_logs[round_id]:
+            qoe: float = current_round.logs["qoe"].score
             match spike_duration:
                 case 0:
                     qoes[ROUND_TYPES[level_name]][0].append(qoe)
+                    qoes_per_task[level_name][0].append(qoe)
                 case 75:
                     qoes[ROUND_TYPES[level_name]][1].append(qoe)
+                    qoes_per_task[level_name][1].append(qoe)
                 case 150:
                     qoes[ROUND_TYPES[level_name]][2].append(qoe)
+                    qoes_per_task[level_name][2].append(qoe)
                 case 225:
                     qoes[ROUND_TYPES[level_name]][3].append(qoe)
+                    qoes_per_task[level_name][3].append(qoe)
 
     handles = []
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
@@ -631,7 +648,7 @@ def qoe_distribution():
             qoe_ms150.extend(m150)
             qoe_ms225.extend(m225)
 
-        z = 0.95
+        z = 1.96
 
         # Standard deviations
         sigma_0 = float(np.std(qoe_ms0))
@@ -661,15 +678,15 @@ def qoe_distribution():
         handle = plt.scatter(x, y, s=12, marker=markers[a])
         plt.plot(x, y)
         # , color="#1f77b4", color="#ff7f0e"
-        # plt.errorbar(
-        #     x,
-        #     y,
-        #     yerr=[ci_0, ci_75, ci_150, ci_225],
-        #     linewidth=1,
-        #     capsize=4,
-        #     fmt="none",
-        #     color=colors[a],
-        # )
+        plt.errorbar(
+            x,
+            y,
+            yerr=[ci_0, ci_75, ci_150, ci_225],
+            linewidth=1,
+            capsize=4,
+            fmt="none",
+            color=colors[a],
+        )
         # plt.errorbar(x, y, yerr=[sigma_0, sigma_75, sigma_150, sigma_225], fmt='o', color="#1f77b4")
         handles.append(handle)
 
@@ -688,6 +705,166 @@ def qoe_distribution():
 
     fig.savefig("figures/mean_qoe_vs_spike_size_per_task.png")
     plt.close("all")
+
+    print("Test time :D")
+
+    fig = plt.figure(figsize=(12,5.8))
+
+    axs = fig.subplots(nrows=2, ncols=4)
+
+    slope_equations = dict()
+    original_data = dict()
+    r2 = dict()
+    row = 0
+    col = 0
+    for a, type in enumerate(qoes_per_task.keys()):
+        ax = axs[row][col]
+
+        ms0 = qoes_per_task[type][0]
+        ms75 = qoes_per_task[type][1]
+        ms150 = qoes_per_task[type][2]
+        ms225 = qoes_per_task[type][3]
+
+        print(type, np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225))
+
+        z = 1.96
+
+        # Standard deviations
+        sigma_0 = float(np.std(ms0))
+        sigma_75 = float(np.std(ms75))
+        sigma_150 = float(np.std(ms150))
+        sigma_225 = float(np.std(ms225))
+
+        n_0 = len(ms0)
+        n_75 = len(ms75)
+        n_150 = len(ms150)
+        n_225 = len(ms225)
+
+        # Confidence intervals
+        ci_0 = z * sigma_0 / math.sqrt(n_0)
+        ci_75 = z * sigma_75 / math.sqrt(n_75)
+        ci_150 = z * sigma_150 / math.sqrt(n_150)
+        ci_225 = z * sigma_225 / math.sqrt(n_225)
+
+        x = [0, 75, 150, 225]
+        y = [np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225)]
+
+        slope_equations[type] = np.poly1d(np.polyfit(x, y, 1))
+        original_data[type] = y
+
+        r2[type] = round(compute_r2(y, [slope_equations[type](val) for val in x]), 2)
+
+        markers = {
+            "Collect Power-Up": ".",
+            "Squish Enemy": "^",
+            "Jump Over Gap": "s",
+            "Special Jump": "D"
+        }
+
+        handle = ax.scatter(x, y, marker=markers["Collect Power-Up"])
+
+        ax.plot(x, [slope_equations[type](val) for val in x], label = ROUND_NAMES[type] + " [" + str(r2[type]) + "]")
+
+        handles.append(handle)
+
+        col += 1
+        if col >= 4 :
+            col = 0
+            row += 1
+
+
+        # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+        #         fancybox=True, shadow=True, ncol=2)
+
+        ax.set_xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+        ax.set_yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+
+        ax.set_ylim(0, 5)
+
+        ax.set_title(ROUND_NAMES[type])
+        ax.set_xlabel("Spike time (ms)")
+        ax.set_ylabel("Average QoE")
+
+    plt.tight_layout()
+    fig.savefig("figures/qoe_vs_spike_time_each_task.png")
+
+    plt.close("all")
+
+    print("Test time :D")
+
+    fig = plt.figure()
+
+    slope_equations = dict()
+    original_data = dict()
+    r2 = dict()
+    row = 0
+    col = 0
+    for a, type in enumerate(qoes_per_task.keys()):
+        ms0 = qoes_per_task[type][0]
+        ms75 = qoes_per_task[type][1]
+        ms150 = qoes_per_task[type][2]
+        ms225 = qoes_per_task[type][3]
+
+        print(type, np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225))
+
+        z = 1.96
+
+        # Standard deviations
+        sigma_0 = float(np.std(ms0))
+        sigma_75 = float(np.std(ms75))
+        sigma_150 = float(np.std(ms150))
+        sigma_225 = float(np.std(ms225))
+
+        n_0 = len(ms0)
+        n_75 = len(ms75)
+        n_150 = len(ms150)
+        n_225 = len(ms225)
+
+        # Confidence intervals
+        ci_0 = z * sigma_0 / math.sqrt(n_0)
+        ci_75 = z * sigma_75 / math.sqrt(n_75)
+        ci_150 = z * sigma_150 / math.sqrt(n_150)
+        ci_225 = z * sigma_225 / math.sqrt(n_225)
+
+        x = [0, 75, 150, 225]
+        y = [np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225)]
+
+        slope_equations[type] = np.poly1d(np.polyfit(x, y, 1))
+        original_data[type] = y
+
+        r2[type] = round(compute_r2(y, [slope_equations[type](val) for val in x]), 2)
+
+        markers = {
+            "Collect Power-Up": ".",
+            "Squish Enemy": "^",
+            "Jump Over Gap": "s",
+            "Special Jump": "D"
+        }
+
+        handle = plt.scatter(x, y, marker=markers[ROUND_TYPES[type]])
+
+        plt.plot(x, [slope_equations[type](val) for val in x], label = ROUND_NAMES[type] + " [" + str(r2[type]) + "]")
+
+        handles.append(handle)
+
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+            fancybox=True, shadow=True, ncol=2)
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+
+    plt.ylim(0, 5)
+
+    plt.title("QoE vs Spike Time Per-Task")
+    plt.xlabel("Spike time (ms)")
+    plt.ylabel("Average QoE")
+
+    plt.tight_layout()
+    fig.savefig("figures/qoe_vs_spike_time_all_task.png")
+
+    plt.close("all")
+
+
 
 
 def compute_lag_differences():
@@ -746,7 +923,7 @@ def success_rate():
 
     print("Generating success rate per-user...")
 
-    success_rate: dict[str, int] = dict()
+    success_rate = dict()
 
     for uid in event_logs:
         last = int(event_logs[uid][-1].iloc[-1]["Coins"])
@@ -781,7 +958,7 @@ def success_rate():
         [i for i in range(len(success_rate))],
         success_counts,
         yerr=[
-            0.95 * np.std(success_counts) / len(success_counts) ** 0.5
+            1.96 * np.std(success_counts) / len(success_counts) ** 0.5
             for i in range(len(success_counts))
         ],
     )
@@ -808,7 +985,7 @@ def success_rate():
 
     rounds = LOG_MANAGER.logs_per_round()
 
-    round_success_rate: dict[str, int] = dict()
+    round_success_rate = dict()
 
     for round_name in rounds:
         logs = rounds[round_name]
@@ -846,7 +1023,7 @@ def success_rate():
         success_counts,
         capsize=4,
         yerr=[
-            0.95 * np.std(success_counts) / len(success_counts) ** 0.5
+            1.96 * np.std(success_counts) / len(success_counts) ** 0.5
             for _ in range(len(success_counts))
         ],
     )
@@ -935,10 +1112,10 @@ def success_rate_vs_spike_time():
 
     print("Generating success rate vs spike time...")
 
-    ms0 = []
-    ms75 = []
-    ms150 = []
-    ms225 = []
+    ms0_actual = []
+    ms75_actual = []
+    ms150_actual = []
+    ms225_actual = []
 
     max_possible_successes = sum([ROUND_MAX_SUCCESSES[i] for i in ROUND_MAX_SUCCESSES])
 
@@ -948,11 +1125,11 @@ def success_rate_vs_spike_time():
         user_ms150 = 0
         user_ms225 = 0
 
-        for round in event_logs[uid]:
-            last = int(round.iloc[-1]["Coins"])
-            first = int(round.iloc[0]["Coins"])
+        for current_round in event_logs[uid]:
+            last = int(current_round.iloc[-1]["Coins"])
+            first = int(current_round.iloc[0]["Coins"])
             n_successes = int((last - first) / 100.0)
-            match int(round["ExpectedLag"].iloc[1]):
+            match int(current_round["ExpectedLag"].iloc[1]):
                 case 0:
                     user_ms0 += n_successes
                 case 75:
@@ -962,39 +1139,39 @@ def success_rate_vs_spike_time():
                 case 225:
                     user_ms225 += n_successes
 
-        ms0.append(user_ms0 / max_possible_successes)
-        ms75.append(user_ms75 / max_possible_successes)
-        ms150.append(user_ms150 / max_possible_successes)
-        ms225.append(user_ms225 / max_possible_successes)
+        ms0_actual.append(user_ms0 / max_possible_successes)
+        ms75_actual.append(user_ms75 / max_possible_successes)
+        ms150_actual.append(user_ms150 / max_possible_successes)
+        ms225_actual.append(user_ms225 / max_possible_successes)
 
-    z = 0.95
+    z = 1.96
 
     # Standard deviations
-    sigma_0 = float(np.std(ms0))
-    sigma_75 = float(np.std(ms75))
-    sigma_150 = float(np.std(ms150))
-    sigma_225 = float(np.std(ms225))
+    sigma_0_actual = float(np.std(ms0_actual))
+    sigma_75_actual = float(np.std(ms75_actual))
+    sigma_150_actual = float(np.std(ms150_actual))
+    sigma_225_actual = float(np.std(ms225_actual))
 
-    n_0 = len(ms0)
-    n_75 = len(ms75)
-    n_150 = len(ms150)
-    n_225 = len(ms225)
+    n_0_actual = len(ms0_actual)
+    n_75_actual = len(ms75_actual)
+    n_150_actual = len(ms150_actual)
+    n_225_actual = len(ms225_actual)
 
     # Confidence intervals
-    ci_0 = z * sigma_0 / math.sqrt(n_0)
-    ci_75 = z * sigma_75 / math.sqrt(n_75)
-    ci_150 = z * sigma_150 / math.sqrt(n_150)
-    ci_225 = z * sigma_225 / math.sqrt(n_225)
+    ci_0_actual = z * sigma_0_actual / math.sqrt(n_0_actual)
+    ci_75_actual = z * sigma_75_actual / math.sqrt(n_75_actual)
+    ci_150_actual = z * sigma_150_actual / math.sqrt(n_150_actual)
+    ci_225_actual = z * sigma_225_actual / math.sqrt(n_225_actual)
 
     fig = plt.figure()
 
     x = [0, 75, 150, 225]
-    y = [np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225)]
+    y_actual = [np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual)]
 
-    plt.scatter(x, y)
-    plt.plot(x, y)
+    plt.scatter(x, y_actual)
+    plt.plot(x, y_actual)
     plt.errorbar(
-        x, y, yerr=[ci_0, ci_75, ci_150, ci_225], linewidth=1, capsize=4, fmt="none"
+        x, y_actual, yerr=[ci_0_actual, ci_75_actual, ci_150_actual, ci_225_actual], linewidth=1, capsize=4, fmt="none"
     )
 
     plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
@@ -1016,12 +1193,42 @@ def success_rate_vs_spike_time():
 
     print("Generating success rate vs spike time per-type...")
 
-    ms0 = []
-    ms75 = []
-    ms150 = []
-    ms225 = []
+    ms0_actual = []
+    ms75_actual = []
+    ms150_actual = []
+    ms225_actual = []
 
-    success_rates: dict[str, list[list[float]]] = {
+    # success_rates_by_task = {
+    #     "Collect Power-Up": {
+    #         "one_two_two_level": [[], [], [], []],
+    #         "two_three_two_level": [[], [], [], []],
+    #     },
+    #     "Squish Enemy": {
+    #         "three_three_three_level": [[], [], [], []],
+    #     },
+    #     "Jump Over Gap": {
+    #         "three_three_five_level": [[], [], [], []],
+    #         "three_four_five_level": [[], [], [], []],
+    #         "two_five_five_level": [[], [], [], []],
+    #     },
+    #     "Special Jump": {
+    #         "four_four_five_level": [[], [], [], []],
+    #         "five_five_five_level": [[], [], [], []],
+    #     },
+    # }
+
+    success_rates_by_task_actual = {
+        "one_two_two_level": [[], [], [], []],
+        "two_three_two_level": [[], [], [], []],
+        "three_three_three_level": [[], [], [], []],
+        "three_three_five_level": [[], [], [], []],
+        "three_four_five_level": [[], [], [], []],
+        "two_five_five_level": [[], [], [], []],
+        "four_four_five_level": [[], [], [], []],
+        "five_five_five_level": [[], [], [], []],
+    }
+
+    success_rates_actual: dict[str, list[list[float]]] = {
         "Collect Power-Up": [[], [], [], []],
         "Squish Enemy": [[], [], [], []],
         "Jump Over Gap": [[], [], [], []],
@@ -1029,25 +1236,29 @@ def success_rate_vs_spike_time():
     }
 
     for uid in event_logs:
-        for round in event_logs[uid]:
-            last = int(round.iloc[-1]["Coins"])
-            first = int(round.iloc[0]["Coins"])
+        for current_round in event_logs[uid]:
+            last = int(current_round.iloc[-1]["Coins"])
+            first = int(current_round.iloc[0]["Coins"])
             n_successes = int((last - first) / 100.0)
 
-            level_type = str(round.iloc[0]["Level"])
+            level_type = str(current_round.iloc[0]["Level"])
             max_successes = ROUND_MAX_SUCCESSES[level_type]
 
-            success_rate = n_successes / max_successes
+            success_rate_actual = n_successes / max_successes
 
-            match int(round["ExpectedLag"].iloc[1]):
+            match int(current_round["ExpectedLag"].iloc[1]):
                 case 0:
-                    success_rates[ROUND_TYPES[level_type]][0].append(success_rate)
+                    success_rates_actual[ROUND_TYPES[level_type]][0].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][0].append(success_rate_actual)
                 case 75:
-                    success_rates[ROUND_TYPES[level_type]][1].append(success_rate)
+                    success_rates_actual[ROUND_TYPES[level_type]][1].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][1].append(success_rate_actual)
                 case 150:
-                    success_rates[ROUND_TYPES[level_type]][2].append(success_rate)
+                    success_rates_actual[ROUND_TYPES[level_type]][2].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][2].append(success_rate_actual)
                 case 225:
-                    success_rates[ROUND_TYPES[level_type]][3].append(success_rate)
+                    success_rates_actual[ROUND_TYPES[level_type]][3].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][3].append(success_rate_actual)
 
     handles = []
     markers = [".", "^", "s", "D"]
@@ -1055,68 +1266,645 @@ def success_rate_vs_spike_time():
 
     fig = plt.figure()
 
-    for a, type in enumerate(success_rates.keys()):
-        ms0 = success_rates[type][0]
-        ms75 = success_rates[type][1]
-        ms150 = success_rates[type][2]
-        ms225 = success_rates[type][3]
+    slope_equations_actual = dict()
+    original_data = dict()
+    r2_actual = dict()
+    for a, type in enumerate(success_rates_actual.keys()):
+        ms0_actual = success_rates_actual[type][0]
+        ms75_actual = success_rates_actual[type][1]
+        ms150_actual = success_rates_actual[type][2]
+        ms225_actual = success_rates_actual[type][3]
 
-        print(type, np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225))
+        print(type, np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual))
 
-        z = 0.95
+        z = 1.96
 
         # Standard deviations
-        sigma_0 = float(np.std(ms0))
-        sigma_75 = float(np.std(ms75))
-        sigma_150 = float(np.std(ms150))
-        sigma_225 = float(np.std(ms225))
+        sigma_0_actual = float(np.std(ms0_actual))
+        sigma_75_actual = float(np.std(ms75_actual))
+        sigma_150_actual = float(np.std(ms150_actual))
+        sigma_225_actual = float(np.std(ms225_actual))
 
-        n_0 = len(ms0)
-        n_75 = len(ms75)
-        n_150 = len(ms150)
-        n_225 = len(ms225)
+        n_0_actual = len(ms0_actual)
+        n_75_actual = len(ms75_actual)
+        n_150_actual = len(ms150_actual)
+        n_225_actual = len(ms225_actual)
 
         # Confidence intervals
-        ci_0 = z * sigma_0 / math.sqrt(n_0)
-        ci_75 = z * sigma_75 / math.sqrt(n_75)
-        ci_150 = z * sigma_150 / math.sqrt(n_150)
-        ci_225 = z * sigma_225 / math.sqrt(n_225)
+        ci_0_actual = z * sigma_0_actual / math.sqrt(n_0_actual)
+        ci_75_actual = z * sigma_75_actual / math.sqrt(n_75_actual)
+        ci_150_actual = z * sigma_150_actual / math.sqrt(n_150_actual)
+        ci_225_actual = z * sigma_225_actual / math.sqrt(n_225_actual)
 
         x = [0, 75, 150, 225]
-        y = [np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225)]
+        y_actual = [np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual)]
 
-        handle = plt.scatter(x, y, marker=markers[a])
-        plt.plot(x, y)
+        slope_equations_actual[type] = np.poly1d(np.polyfit(x, y_actual, 1))
+        original_data[type] = y_actual
+
+        r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 3)
+
+        handle_actual = plt.scatter(x, y_actual, marker=markers[a])
+
+        plt.plot(x, [slope_equations_actual[type](val) for val in x])
+
         plt.errorbar(
             x,
-            y,
-            yerr=[ci_0, ci_75, ci_150, ci_225],
+            y_actual,
+            yerr=[ci_0_actual, ci_75_actual, ci_150_actual, ci_225_actual],
             linewidth=1,
             capsize=4,
             fmt="none",
             color=colors[a],
         )
 
-        handles.append(handle)
+        handles.append(handle_actual)
 
-    plt.legend(handles, success_rates.keys())
+    plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
 
     plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
     plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
 
     plt.ylim(0, 1)
 
-    plt.title("Success Rate vs Spike Time Per-Task")
+    plt.title("Practical Success Rate vs Spike Time Per-Task")
     plt.xlabel("Spike time (ms)")
     plt.ylabel("Success rate")
 
-    fig.savefig("figures/success_rate_vs_spike_time_per_task.png")
+    fig.savefig("figures/practical_success_rate_vs_spike_time_per_task.png")
 
     plt.close("all")
 
     print(
         "Saved success rate vs spike time to figures/success_rate_vs_spike_time_per_task.png"
     )
+
+    success_rates_by_task_actual = {
+        "one_two_two_level": [[], [], [], []],
+        "two_three_two_level": [[], [], [], []],
+        "three_three_three_level": [[], [], [], []],
+        "three_three_five_level": [[], [], [], []],
+        "three_four_five_level": [[], [], [], []],
+        "two_five_five_level": [[], [], [], []],
+        "four_four_five_level": [[], [], [], []],
+        "five_five_five_level": [[], [], [], []],
+    }
+
+    success_rates_actual: dict[str, list[list[float]]] = {
+        "Collect Power-Up": [[], [], [], []],
+        "Squish Enemy": [[], [], [], []],
+        "Jump Over Gap": [[], [], [], []],
+        "Special Jump": [[], [], [], []],
+    }
+
+    for uid in event_logs:
+        for current_round in event_logs[uid]:
+            last = int(current_round.iloc[-1]["Coins"])
+            first = int(current_round.iloc[0]["Coins"])
+
+            n_failures = 0
+            for row in current_round["Event"] :
+                if "Death" in row or "Failure" in row :
+                    n_failures += 1
+
+            n_successes = int((last - first) / 100.0)
+
+            level_type = str(current_round.iloc[0]["Level"])
+            max_successes = n_successes + n_failures
+
+            success_rate_actual = n_successes / max_successes
+
+            match int(current_round["ExpectedLag"].iloc[1]):
+                case 0:
+                    success_rates_actual[ROUND_TYPES[level_type]][0].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][0].append(success_rate_actual)
+                case 75:
+                    success_rates_actual[ROUND_TYPES[level_type]][1].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][1].append(success_rate_actual)
+                case 150:
+                    success_rates_actual[ROUND_TYPES[level_type]][2].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][2].append(success_rate_actual)
+                case 225:
+                    success_rates_actual[ROUND_TYPES[level_type]][3].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][3].append(success_rate_actual)
+
+    handles = []
+    markers = [".", "^", "s", "D"]
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+
+    fig = plt.figure()
+
+    slope_equations_actual = dict()
+    original_data = dict()
+    r2_actual = dict()
+    for a, type in enumerate(success_rates_actual.keys()):
+        ms0_actual = success_rates_actual[type][0]
+        ms75_actual = success_rates_actual[type][1]
+        ms150_actual = success_rates_actual[type][2]
+        ms225_actual = success_rates_actual[type][3]
+
+        print(type, np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual))
+
+        z = 1.96
+
+        # Standard deviations
+        sigma_0_actual = float(np.std(ms0_actual))
+        sigma_75_actual = float(np.std(ms75_actual))
+        sigma_150_actual = float(np.std(ms150_actual))
+        sigma_225_actual = float(np.std(ms225_actual))
+
+        n_0_actual = len(ms0_actual)
+        n_75_actual = len(ms75_actual)
+        n_150_actual = len(ms150_actual)
+        n_225_actual = len(ms225_actual)
+
+        # Confidence intervals
+        ci_0_actual = z * sigma_0_actual / math.sqrt(n_0_actual)
+        ci_75_actual = z * sigma_75_actual / math.sqrt(n_75_actual)
+        ci_150_actual = z * sigma_150_actual / math.sqrt(n_150_actual)
+        ci_225_actual = z * sigma_225_actual / math.sqrt(n_225_actual)
+
+        x = [0, 75, 150, 225]
+        y_actual = [np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual)]
+
+        slope_equations_actual[type] = np.poly1d(np.polyfit(x, y_actual, 1))
+        original_data[type] = y_actual
+
+        r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 3)
+
+        handle_actual = plt.scatter(x, y_actual, marker=markers[a])
+
+        plt.plot(x, [slope_equations_actual[type](val) for val in x])
+
+        plt.errorbar(
+            x,
+            y_actual,
+            yerr=[ci_0_actual, ci_75_actual, ci_150_actual, ci_225_actual],
+            linewidth=1,
+            capsize=4,
+            fmt="none",
+            color=colors[a],
+        )
+
+        handles.append(handle_actual)
+
+    plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    plt.ylim(0, 1)
+
+    plt.title("Actual Success Rate vs Spike Time Per-Task")
+    plt.xlabel("Spike time (ms)")
+    plt.ylabel("Success rate")
+
+    fig.savefig("figures/actual_success_rate_vs_spike_time_per_task.png")
+
+    plt.close("all")
+
+    print("Test 2")
+
+    success_rates_by_task_actual = {
+        "one_two_two_level": [[], [], [], []],
+        "two_three_two_level": [[], [], [], []],
+        "three_three_three_level": [[], [], [], []],
+        "three_three_five_level": [[], [], [], []],
+        "three_four_five_level": [[], [], [], []],
+        "two_five_five_level": [[], [], [], []],
+        "four_four_five_level": [[], [], [], []],
+        "five_five_five_level": [[], [], [], []],
+    }
+
+    success_rates_actual: dict[str, list[list[float]]] = {
+        "Collect Power-Up": [[], [], [], []],
+        "Squish Enemy": [[], [], [], []],
+        "Jump Over Gap": [[], [], [], []],
+        "Special Jump": [[], [], [], []],
+    }
+
+    success_rates_by_task_practical = {
+        "one_two_two_level": [[], [], [], []],
+        "two_three_two_level": [[], [], [], []],
+        "three_three_three_level": [[], [], [], []],
+        "three_three_five_level": [[], [], [], []],
+        "three_four_five_level": [[], [], [], []],
+        "two_five_five_level": [[], [], [], []],
+        "four_four_five_level": [[], [], [], []],
+        "five_five_five_level": [[], [], [], []],
+    }
+
+    success_rates_practical: dict[str, list[list[float]]] = {
+        "Collect Power-Up": [[], [], [], []],
+        "Squish Enemy": [[], [], [], []],
+        "Jump Over Gap": [[], [], [], []],
+        "Special Jump": [[], [], [], []],
+    }
+
+    for uid in event_logs:
+        for current_round in event_logs[uid]:
+            last = int(current_round.iloc[-1]["Coins"])
+            first = int(current_round.iloc[0]["Coins"])
+
+            n_failures = 0
+            for row in current_round["Event"] :
+                if "Death" in row or "Failure" in row :
+                    n_failures += 1
+
+            n_successes = int((last - first) / 100.0)
+
+            level_type = str(current_round.iloc[0]["Level"])
+            max_successes_practical = ROUND_MAX_SUCCESSES[level_type]
+
+            level_type = str(current_round.iloc[0]["Level"])
+            max_successes_actual = n_successes + n_failures
+
+            success_rate_practical = n_successes / max_successes_practical
+            success_rate_actual = n_successes / max_successes_actual
+
+            match int(current_round["ExpectedLag"].iloc[1]):
+                case 0:
+                    success_rates_actual[ROUND_TYPES[level_type]][0].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][0].append(success_rate_actual)
+                    success_rates_practical[ROUND_TYPES[level_type]][0].append(success_rate_practical)
+                    success_rates_by_task_practical[level_type][0].append(success_rate_practical)
+                case 75:
+                    success_rates_actual[ROUND_TYPES[level_type]][1].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][1].append(success_rate_actual)
+
+                    success_rates_practical[ROUND_TYPES[level_type]][1].append(success_rate_practical)
+                    success_rates_by_task_practical[level_type][1].append(success_rate_practical)
+                case 150:
+                    success_rates_actual[ROUND_TYPES[level_type]][2].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][2].append(success_rate_actual)
+
+                    success_rates_practical[ROUND_TYPES[level_type]][2].append(success_rate_practical)
+                    success_rates_by_task_practical[level_type][2].append(success_rate_practical)
+                case 225:
+                    success_rates_actual[ROUND_TYPES[level_type]][3].append(success_rate_actual)
+                    success_rates_by_task_actual[level_type][3].append(success_rate_actual)
+
+                    success_rates_practical[ROUND_TYPES[level_type]][3].append(success_rate_practical)
+                    success_rates_by_task_practical[level_type][3].append(success_rate_practical)
+
+    handles = []
+    markers = [".", "^", "s", "D"]
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+
+    fig = plt.figure()
+
+    slope_equations_actual = dict()
+    slope_equations_practical = dict()
+    original_data = dict()
+    r2_actual = dict()
+    r2_practical = dict()
+    for a, type in enumerate(success_rates_actual.keys()):
+        fig = plt.figure()
+        ms0_actual = success_rates_actual[type][0]
+        ms75_actual = success_rates_actual[type][1]
+        ms150_actual = success_rates_actual[type][2]
+        ms225_actual = success_rates_actual[type][3]
+
+        ms0_practical = success_rates_practical[type][0]
+        ms75_practical = success_rates_practical[type][1]
+        ms150_practical = success_rates_practical[type][2]
+        ms225_practical = success_rates_practical[type][3]
+
+        # print(type, np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual))
+
+        z = 1.96
+
+        # Standard deviations
+        sigma_0_actual = float(np.std(ms0_actual))
+        sigma_75_actual = float(np.std(ms75_actual))
+        sigma_150_actual = float(np.std(ms150_actual))
+        sigma_225_actual = float(np.std(ms225_actual))
+
+        sigma_0_practical = float(np.std(ms0_practical))
+        sigma_75_practical = float(np.std(ms75_practical))
+        sigma_150_practical = float(np.std(ms150_practical))
+        sigma_225_practical = float(np.std(ms225_practical))
+
+        n_0_actual = len(ms0_actual)
+        n_75_actual = len(ms75_actual)
+        n_150_actual = len(ms150_actual)
+        n_225_actual = len(ms225_actual)
+
+        n_0_practical = len(ms0_practical)
+        n_75_practical = len(ms75_practical)
+        n_150_practical = len(ms150_practical)
+        n_225_practical = len(ms225_practical)
+
+        # Confidence intervals
+        ci_0_actual = z * sigma_0_actual / math.sqrt(n_0_actual)
+        ci_75_actual = z * sigma_75_actual / math.sqrt(n_75_actual)
+        ci_150_actual = z * sigma_150_actual / math.sqrt(n_150_actual)
+        ci_225_actual = z * sigma_225_actual / math.sqrt(n_225_actual)
+
+        ci_0_practical = z * sigma_0_practical / math.sqrt(n_0_practical)
+        ci_75_practical = z * sigma_75_practical / math.sqrt(n_75_practical)
+        ci_150_practical = z * sigma_150_practical / math.sqrt(n_150_practical)
+        ci_225_practical = z * sigma_225_practical / math.sqrt(n_225_practical)
+
+        x = [0, 75, 150, 225]
+        y_actual = [np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual)]
+
+        y_practical = [np.mean(ms0_practical), np.mean(ms75_practical), np.mean(ms150_practical), np.mean(ms225_practical)]
+
+        slope_equations_actual[type] = np.poly1d(np.polyfit(x, y_actual, 1))
+
+        r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 3)
+
+        slope_equations_practical[type] = np.poly1d(np.polyfit(x, y_practical, 1))
+
+        r2_practical[type] = round(compute_r2(y_practical, [slope_equations_practical[type](val) for val in x]), 3)
+
+        handle_actual = plt.scatter(x, y_actual, marker=markers[0])
+
+        handle_practical = plt.scatter(x, y_practical, marker=markers[1])
+
+        plt.plot(x, [slope_equations_actual[type](val) for val in x])
+        plt.plot(x, [slope_equations_practical[type](val) for val in x])
+
+        handles.append(handle_actual)
+        handles.append(handle_practical)
+
+        plt.legend(handles, ["Actual", "Practical"])
+
+        plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+        plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+        plt.ylim(0, 1)
+
+        plt.title(f"Actual And Practical Success Rate vs Spike Time {type}")
+        plt.xlabel("Spike time (ms)")
+        plt.ylabel("Success rate")
+
+        fig.savefig("figures/actual_and_practical_success_rate_vs_spike_time_per_task_" + type + ".png")
+
+    for a, type in enumerate(success_rates_by_task_actual.keys()):
+        fig = plt.figure()
+        ms0_actual = success_rates_by_task_actual[type][0]
+        ms75_actual = success_rates_by_task_actual[type][1]
+        ms150_actual = success_rates_by_task_actual[type][2]
+        ms225_actual = success_rates_by_task_actual[type][3]
+
+        ms0_practical = success_rates_by_task_practical[type][0]
+        ms75_practical = success_rates_by_task_practical[type][1]
+        ms150_practical = success_rates_by_task_practical[type][2]
+        ms225_practical = success_rates_by_task_practical[type][3]
+
+        z = 1.96
+
+        # Standard deviations
+        sigma_0_actual = float(np.std(ms0_actual))
+        sigma_75_actual = float(np.std(ms75_actual))
+        sigma_150_actual = float(np.std(ms150_actual))
+        sigma_225_actual = float(np.std(ms225_actual))
+
+        sigma_0_practical = float(np.std(ms0_practical))
+        sigma_75_practical = float(np.std(ms75_practical))
+        sigma_150_practical = float(np.std(ms150_practical))
+        sigma_225_practical = float(np.std(ms225_practical))
+
+        n_0_actual = len(ms0_actual)
+        n_75_actual = len(ms75_actual)
+        n_150_actual = len(ms150_actual)
+        n_225_actual = len(ms225_actual)
+
+        n_0_practical = len(ms0_practical)
+        n_75_practical = len(ms75_practical)
+        n_150_practical = len(ms150_practical)
+        n_225_practical = len(ms225_practical)
+
+        # Confidence intervals
+        ci_0_actual = z * sigma_0_actual / math.sqrt(n_0_actual)
+        ci_75_actual = z * sigma_75_actual / math.sqrt(n_75_actual)
+        ci_150_actual = z * sigma_150_actual / math.sqrt(n_150_actual)
+        ci_225_actual = z * sigma_225_actual / math.sqrt(n_225_actual)
+
+        ci_0_practical = z * sigma_0_practical / math.sqrt(n_0_practical)
+        ci_75_practical = z * sigma_75_practical / math.sqrt(n_75_practical)
+        ci_150_practical = z * sigma_150_practical / math.sqrt(n_150_practical)
+        ci_225_practical = z * sigma_225_practical / math.sqrt(n_225_practical)
+
+        x = [0, 75, 150, 225]
+        y_actual = [np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual)]
+
+        y_practical = [np.mean(ms0_practical), np.mean(ms75_practical), np.mean(ms150_practical), np.mean(ms225_practical)]
+
+        slope_equations_actual[type] = np.poly1d(np.polyfit(x, y_actual, 1))
+
+        r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 3)
+
+        slope_equations_practical[type] = np.poly1d(np.polyfit(x, y_practical, 1))
+
+        r2_practical[type] = round(compute_r2(y_practical, [slope_equations_practical[type](val) for val in x]), 3)
+
+        handle_actual = plt.scatter(x, y_actual, marker=markers[0])
+
+        handle_practical = plt.scatter(x, y_practical, marker=markers[1])
+
+        plt.plot(x, [slope_equations_actual[type](val) for val in x])
+        plt.plot(x, [slope_equations_practical[type](val) for val in x])
+
+        handles.append(handle_actual)
+        handles.append(handle_practical)
+
+        plt.legend(handles, ["Actual", "Practical"])
+
+        plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+        plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+        plt.ylim(0, 1)
+
+        plt.title(f"Actual And Practical Success Rate vs Spike Time {ROUND_NAMES[type]}")
+        plt.xlabel("Spike time (ms)")
+        plt.ylabel("Success rate")
+
+        fig.savefig("figures/actual_and_practical_success_rate_vs_spike_time_per_task_" + type + ".png")
+
+    plt.close("all")
+
+    print("Test 3")
+
+    # fig = plt.figure()
+
+    # base = slope_equations_actual["Collect Power-Up"](0)
+
+    # handles = []
+    # x = [0, 75, 150, 225]
+    # for (a, type) in enumerate(slope_equations_actual.keys()) :
+
+    #     offset = base - slope_equations_actual[type](0)
+
+    #     y_actual = [(slope_equations_actual[type](val) + offset) for val in x]
+
+    #     handle_actual = plt.scatter(x, y_actual, marker=markers[a])
+
+    #     plt.plot(x, y_actual)
+
+    #     handles.append(handle_actual)
+
+    # plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
+
+    # plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    # plt.yticks([])
+
+    # plt.ylim(0, 1)
+
+    # plt.title("Comparison of Trendlines")
+    # plt.xlabel("Spike time (ms)")
+    # # plt.ylabel("Success rate")
+
+    # fig.savefig("figures/slopes_success_rate_vs_spike_time_per_task.png")
+
+    # plt.close("all")
+
+    print(
+        "Testing time :D"
+    )
+
+    # for category in success_rates_by_task.keys() :
+    #     fig = plt.figure()
+    #     slope_equations = dict()
+    #     original_data = dict()
+    #     r2 = dict()
+    #     for a, type in enumerate(success_rates_by_task[category].keys()):
+    #         ms0 = success_rates_by_task[category][type][0]
+    #         ms75 = success_rates_by_task[category][type][1]
+    #         ms150 = success_rates_by_task[category][type][2]
+    #         ms225 = success_rates_by_task[category][type][3]
+
+    #         print(type, np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225))
+
+    #         z = 1.96
+
+    #         # Standard deviations
+    #         sigma_0 = float(np.std(ms0))
+    #         sigma_75 = float(np.std(ms75))
+    #         sigma_150 = float(np.std(ms150))
+    #         sigma_225 = float(np.std(ms225))
+
+    #         n_0 = len(ms0)
+    #         n_75 = len(ms75)
+    #         n_150 = len(ms150)
+    #         n_225 = len(ms225)
+
+    #         # Confidence intervals
+    #         ci_0 = z * sigma_0 / math.sqrt(n_0)
+    #         ci_75 = z * sigma_75 / math.sqrt(n_75)
+    #         ci_150 = z * sigma_150 / math.sqrt(n_150)
+    #         ci_225 = z * sigma_225 / math.sqrt(n_225)
+
+    #         x = [0, 75, 150, 225]
+    #         y = [np.mean(ms0), np.mean(ms75), np.mean(ms150), np.mean(ms225)]
+
+    #         slope_equations[type] = np.poly1d(np.polyfit(x, y, 1))
+    #         original_data[type] = y
+
+    #         r2[type] = round(compute_r2(y, [slope_equations[type](val) for val in x]), 3)
+
+    #         handle = plt.scatter(x, y, marker=markers[a % 4])
+
+    #         plt.plot(x, [slope_equations[type](val) for val in x])
+
+    #         plt.errorbar(
+    #             x,
+    #             y,
+    #             yerr=[ci_0, ci_75, ci_150, ci_225],
+    #             linewidth=1,
+    #             capsize=4,
+    #             fmt="none",
+    #             color=colors[a % 4],
+    #         )
+
+    #         handles.append(handle)
+
+    #     plt.legend(handles, [key + " " + str(r2[key]) for key in success_rates_by_task[category].keys()])
+
+    #     plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    #     plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    #     plt.ylim(0, 1)
+
+    #     plt.title("Success Rate vs Spike Time Per-Task")
+    #     plt.xlabel("Spike time (ms)")
+    #     plt.ylabel("Success rate")
+
+    #     fig.savefig("figures/success_rate_vs_spike_time_" + category + ".png")
+
+    #     plt.close("all")
+
+    fig = plt.figure()
+
+    slope_equations_actual = dict()
+    original_data = dict()
+    r2_actual = dict()
+    for a, type in enumerate(success_rates_by_task_actual.keys()):
+        ms0_actual = success_rates_by_task_actual[type][0]
+        ms75_actual = success_rates_by_task_actual[type][1]
+        ms150_actual = success_rates_by_task_actual[type][2]
+        ms225_actual = success_rates_by_task_actual[type][3]
+
+        print(type, np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual))
+
+        z = 1.96
+
+        # Standard deviations
+        sigma_0_actual = float(np.std(ms0_actual))
+        sigma_75_actual = float(np.std(ms75_actual))
+        sigma_150_actual = float(np.std(ms150_actual))
+        sigma_225_actual = float(np.std(ms225_actual))
+
+        n_0_actual = len(ms0_actual)
+        n_75_actual = len(ms75_actual)
+        n_150_actual = len(ms150_actual)
+        n_225_actual = len(ms225_actual)
+
+        # Confidence intervals
+        ci_0_actual = z * sigma_0_actual / math.sqrt(n_0_actual)
+        ci_75_actual = z * sigma_75_actual / math.sqrt(n_75_actual)
+        ci_150_actual = z * sigma_150_actual / math.sqrt(n_150_actual)
+        ci_225_actual = z * sigma_225_actual / math.sqrt(n_225_actual)
+
+        x = [0, 75, 150, 225]
+        y_actual = [np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual)]
+
+        slope_equations_actual[type] = np.poly1d(np.polyfit(x, y_actual, 1))
+        original_data[type] = y_actual
+
+        r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 2)
+
+        markers = {
+            "Collect Power-Up": ".",
+            "Squish Enemy": "^",
+            "Jump Over Gap": "s",
+            "Special Jump": "D"
+        }
+
+        handle_actual = plt.scatter(x, y_actual, marker=markers[ROUND_TYPES[type]])
+
+        plt.plot(x, [slope_equations_actual[type](val) for val in x], label = ROUND_NAMES[type] + " [" + str(r2_actual[type]) + "]")
+
+        handles.append(handle_actual)
+
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+              fancybox=True, shadow=True, ncol=2)
+
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+
+    plt.ylim(0, 1)
+
+    plt.tight_layout()
+    plt.title("Success Rate vs Spike Time Per-Task")
+    plt.xlabel("Spike time (ms)")
+    plt.ylabel("Success rate")
+
+    fig.savefig("figures/success_rate_vs_spike_time_all_task.png")
+
+    plt.close("all")
 
 
 def success_distribution():
