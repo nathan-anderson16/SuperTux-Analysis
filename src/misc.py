@@ -62,7 +62,7 @@ def reaction_time_vs_score(demo_info) :
     for (uid, scores) in player_scores.items() :
         graphable_data.append((int(demo_info[uid]["Reaction Time"]), np.mean(scores)))
 
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
 
@@ -89,7 +89,7 @@ def reaction_time_vs_qoe(demo_info) :
     for (uid, scores) in player_qoe_scores.items() :
         graphable_data.append((int(demo_info[uid]["Reaction Time"]), np.mean(scores)))
 
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
 
@@ -123,7 +123,7 @@ def platformer_experience_vs_score(demo_info) :
     for (uid, scores) in player_scores.items() :
         graphable_data.append((int(demo_info[uid]["How much experience do you have playing 2D platformers?"]), np.mean(scores)))
 
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
 
@@ -151,7 +151,7 @@ def platformer_experience_vs_qoe(demo_info) :
     for (uid, scores) in player_qoe_scores.items() :
         graphable_data.append((int(demo_info[uid]["How much experience do you have playing 2D platformers?"]), np.mean(scores)))
 
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     plt.scatter([x[0] for x in graphable_data], [x[1] for x in graphable_data])
 
@@ -173,7 +173,7 @@ def qoe_distribution():
 
     # -----Overall QoE Score Distribution-----
     print("Generating overall QoE score distribution...")
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     ax = plt.subplot()
 
@@ -210,7 +210,7 @@ def qoe_distribution():
 
     # -----Mean QoE Score Distribution-----
     print("Generating mean QoE score distribution...")
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     ax = plt.subplot()
 
@@ -247,7 +247,7 @@ def qoe_distribution():
 
     # Distribution of QoE scores per-user
     print("Generating QoE distribution per-user...")
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     # Number of rows and columns the plot will have.
     ncols = 6
@@ -396,7 +396,7 @@ def qoe_distribution():
     # -----Mean QoE Distribution Per-Round-----
     all_round_logs = LOG_MANAGER.logs_per_round()
 
-    print("Generating QoE distribution per spike size...")
+    print("Generating QoE distribution per Spike time...")
 
     fig = plt.figure(figsize=(12, 3.3))
 
@@ -487,22 +487,22 @@ def qoe_distribution():
         [0, 0.25, 0.5, 0.75, 1.0], labels=["0", "0.25", "0.5", "0.75", "1"]
     )
 
-    fig.suptitle("Distribution of QoE Scores Per-Spike Size")
+    fig.suptitle("Distribution of QoE Scores Per-Spike size")
 
     fig.tight_layout()
     fig.savefig("figures/qoe_distribution_per_spike_size.png")
     plt.close()
 
     print(
-        "Saved QoE distribution per spike size to figures/qoe_distribution_per_spike_size.png"
+        "Saved QoE distribution per Spike time to figures/qoe_distribution_per_spike_size.png"
     )
 
-    # -----QoE Distribution vs Spike Size-----
-    print("Generating QoE distribution vs spike size...")
+    # -----QoE Distribution vs Spike time-----
+    print("Generating QoE distribution vs Spike time...")
 
     all_round_logs = LOG_MANAGER.logs_per_round()
 
-    print("Generating mean QoE per spike size...")
+    print("Generating mean QoE per Spike time...")
 
     fig = plt.figure(figsize=(4, 3))
 
@@ -576,14 +576,14 @@ def qoe_distribution():
     plt.savefig("figures/mean_qoe_vs_spike_size.png")
     plt.close()
 
-    print("Saved mean QoE vs spike size to figures/mean_qoe_vs_spike_size.png")
+    print("Saved mean QoE vs Spike time to figures/mean_qoe_vs_spike_size.png")
 
-    # -----QoE distribution vs spike size per-task-----
+    # -----QoE distribution vs Spike time per-task-----
     all_round_logs = LOG_MANAGER.logs_per_round()
 
-    print("Generating mean QoE per spike size per-task...")
+    print("Generating mean QoE per Spike time per-task...")
 
-    fig = plt.figure(figsize=(5, 3.75))
+    fig = plt.figure(figsize=(8, 5.5))
 
     qoes_per_task: dict[str, list[list[float]]] = {
         "one_two_two_level": [[], [], [], []],
@@ -623,8 +623,8 @@ def qoe_distribution():
                     qoes_per_task[level_name][3].append(qoe)
 
     handles = []
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
-    markers = [".", "^", "s", "D"]
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+    markers = ["o", "^", "s", "D"]
 
     for a, type in enumerate(qoes.keys()):
         qoe_ms0 = qoes[type][0]
@@ -667,7 +667,7 @@ def qoe_distribution():
         ci_150 = z * sigma_150 / math.sqrt(n_150)
         ci_225 = z * sigma_225 / math.sqrt(n_225)
 
-        x = [0, 75, 150, 225]
+        x = [0 + (a * 5) - 10, 75 + (a * 5) - 10, 150 + (a * 5) - 10, 225 + (a * 5) - 10]
         y = [
             float(np.mean(qoe_ms0)),
             float(np.mean(qoe_ms75)),
@@ -675,8 +675,9 @@ def qoe_distribution():
             float(np.mean(qoe_ms225)),
         ]
 
-        handle = plt.scatter(x, y, s=12, marker=markers[a])
-        plt.plot(x, y)
+        handle = plt.scatter(x, y, s=40, c=colors[a], marker=markers[a])
+        plt.plot(x, y, c=colors[a])
+
         # , color="#1f77b4", color="#ff7f0e"
         plt.errorbar(
             x,
@@ -687,17 +688,19 @@ def qoe_distribution():
             fmt="none",
             color=colors[a],
         )
+
         # plt.errorbar(x, y, yerr=[sigma_0, sigma_75, sigma_150, sigma_225], fmt='o', color="#1f77b4")
+
         handles.append(handle)
 
-    plt.legend(handles, qoes.keys())
+    plt.legend(handles, qoes.keys(), loc='upper center', bbox_to_anchor=(0.5, -0.20), fancybox=True, shadow=True, ncol=2, fontsize=14)
 
-    plt.xlabel("Spike Duration")
-    plt.ylabel("QoE Score")
-    plt.title("Mean QoE Score vs Spike Duration Per-Task")
+    plt.xlabel("Spike Duration (ms)", fontsize=14)
+    plt.ylabel("QoE Score", fontsize=14)
+    plt.title("Mean QoE Score vs Spike Duration Per-Task", fontsize=14)
 
-    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"], fontsize=14)
+    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"], fontsize=14)
 
     plt.ylim((1, 5))
 
@@ -755,15 +758,15 @@ def qoe_distribution():
         r2[type] = round(compute_r2(y, [slope_equations[type](val) for val in x]), 2)
 
         markers = {
-            "Collect Power-Up": ".",
+            "Collect Power-Up": "o",
             "Squish Enemy": "^",
             "Jump Over Gap": "s",
             "Special Jump": "D"
         }
 
-        handle = ax.scatter(x, y, marker=markers["Collect Power-Up"])
+        handle = ax.scatter(x, y, c=colors[a], marker=markers[ROUND_TYPES[type]], label = f"{ROUND_NAMES[type]} [r2: {str(r2[type])}]")
 
-        ax.plot(x, [slope_equations[type](val) for val in x], label = ROUND_NAMES[type] + " [" + str(r2[type]) + "]")
+        ax.plot(x, [slope_equations[type](val) for val in x], c=colors[a])
 
         handles.append(handle)
 
@@ -782,7 +785,7 @@ def qoe_distribution():
         ax.set_ylim(0, 5)
 
         ax.set_title(ROUND_NAMES[type])
-        ax.set_xlabel("Spike time (ms)")
+        ax.set_xlabel("Spike size (ms)")
         ax.set_ylabel("Average QoE")
 
     plt.tight_layout()
@@ -792,7 +795,7 @@ def qoe_distribution():
 
     print("Test time :D")
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,5.5))
 
     slope_equations = dict()
     original_data = dict()
@@ -835,29 +838,29 @@ def qoe_distribution():
         r2[type] = round(compute_r2(y, [slope_equations[type](val) for val in x]), 2)
 
         markers = {
-            "Collect Power-Up": ".",
+            "Collect Power-Up": "o",
             "Squish Enemy": "^",
             "Jump Over Gap": "s",
             "Special Jump": "D"
         }
 
-        handle = plt.scatter(x, y, marker=markers[ROUND_TYPES[type]])
+        handle = plt.scatter(x, y, s=40, c=colors[a], marker=markers[ROUND_TYPES[type]], label = f"{ROUND_NAMES[type]} [r2: {str(r2[type])}]")
 
-        plt.plot(x, [slope_equations[type](val) for val in x], label = ROUND_NAMES[type] + " [" + str(r2[type]) + "]")
+        plt.plot(x, [slope_equations[type](val) for val in x], c=colors[a])
 
         handles.append(handle)
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20),
             fancybox=True, shadow=True, ncol=2)
 
-    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"], fontsize=14)
+    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"], fontsize=14)
 
     plt.ylim(0, 5)
 
-    plt.title("QoE vs Spike Time Per-Task")
-    plt.xlabel("Spike time (ms)")
-    plt.ylabel("Average QoE")
+    plt.title("QoE vs Spike Size Per-Task", fontsize=14)
+    plt.xlabel("Spike size (ms)", fontsize=14)
+    plt.ylabel("Average QoE", fontsize=14)
 
     plt.tight_layout()
     fig.savefig("figures/qoe_vs_spike_time_all_task.png")
@@ -900,7 +903,7 @@ def compute_lag_differences():
 
     plt.figure()
     plt.boxplot(all_diffs)
-    plt.title("Expected vs Actual Spike Times")
+    plt.title("Expected vs Actual Spike Sizes")
     plt.xticks(ticks=[])
     plt.xlabel("")
     plt.ylabel("Difference (ms)")
@@ -971,7 +974,7 @@ def success_rate():
     )
 
     plt.xlabel("User ID")
-    plt.ylabel("Success Rate")
+    plt.ylabel("Practical success Rate")
 
     plt.savefig("figures/success_rate_per_user.png")
 
@@ -1044,8 +1047,8 @@ def success_rate():
 
     plt.setp(plt.xticks()[1], rotation=30, horizontalalignment="right")
 
-    plt.xlabel("Task")
-    plt.ylabel("Success Rate")
+    plt.xlabel("Task", fontsize=14)
+    plt.ylabel("Practical success Rate", fontsize=14)
 
     plt.tight_layout()
 
@@ -1074,7 +1077,7 @@ def qoe_score_vs_acceptability():
     for score, acceptability in all_scores.items():
         all_scores[score] = acceptability.count(True) / len(acceptability)
 
-    plt.figure()
+    plt.figure(figsize=(8,5.5))
 
     count_uid = [(all_scores[k], k) for k in all_scores.keys()]
     sorted_uids = sorted(count_uid, key=lambda x: x[0], reverse=True)
@@ -1087,11 +1090,11 @@ def qoe_score_vs_acceptability():
 
     plt.plot(sorted(keys), [poly_fit(key) for key in sorted(keys)])
 
-    plt.yticks([i * 0.1 for i in range(0, 10 + 1)])
-    plt.xticks([1, 2, 3, 4, 5])
+    plt.yticks([i * 0.1 for i in range(0, 10 + 1)], fontsize=14)
+    plt.xticks([1, 2, 3, 4, 5], fontsize=14)
 
-    plt.xlabel("QoE Score")
-    plt.ylabel("Acceptibility Rate")
+    plt.xlabel("QoE Score", fontsize=14)
+    plt.ylabel("Acceptibility Rate", fontsize=14)
 
     plt.tight_layout()
 
@@ -1108,7 +1111,7 @@ def success_rate_vs_spike_time():
     """
     event_logs = LOG_MANAGER.cleaned_event_logs()
 
-    # -----Success rate vs spike size-----
+    # -----Success rate vs Spike time-----
 
     print("Generating success rate vs spike time...")
 
@@ -1168,20 +1171,20 @@ def success_rate_vs_spike_time():
     x = [0, 75, 150, 225]
     y_actual = [np.mean(ms0_actual), np.mean(ms75_actual), np.mean(ms150_actual), np.mean(ms225_actual)]
 
-    plt.scatter(x, y_actual)
+    plt.scatter(x, y_actual, s=40)
     plt.plot(x, y_actual)
     plt.errorbar(
         x, y_actual, yerr=[ci_0_actual, ci_75_actual, ci_150_actual, ci_225_actual], linewidth=1, capsize=4, fmt="none"
     )
 
-    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"], fontsize=14)
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"], fontsize=14)
 
     plt.ylim(0, 1)
 
-    plt.title("Success rate vs spike time")
-    plt.xlabel("Spike time (ms)")
-    plt.ylabel("Success rate")
+    plt.title("Success rate vs spike size", fontsize=14)
+    plt.xlabel("Spike size (ms)", fontsize=14)
+    plt.ylabel("Practical success rate", fontsize=14)
 
     fig.savefig("figures/success_rate_vs_spike_time.png")
 
@@ -1261,10 +1264,10 @@ def success_rate_vs_spike_time():
                     success_rates_by_task_actual[level_type][3].append(success_rate_actual)
 
     handles = []
-    markers = [".", "^", "s", "D"]
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+    markers = ["o", "^", "s", "D"]
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,5.5))
 
     slope_equations_actual = dict()
     original_data = dict()
@@ -1304,7 +1307,7 @@ def success_rate_vs_spike_time():
 
         r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 3)
 
-        handle_actual = plt.scatter(x, y_actual, marker=markers[a])
+        handle_actual = plt.scatter(x, y_actual, s=40, marker=markers[a])
 
         plt.plot(x, [slope_equations_actual[type](val) for val in x])
 
@@ -1320,16 +1323,19 @@ def success_rate_vs_spike_time():
 
         handles.append(handle_actual)
 
-    plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
+    plt.legend(handles, [f"{key} [r2: {str(r2_actual[key])}]" for key in success_rates_actual.keys()], loc='upper center', bbox_to_anchor=(0.5, -0.20),
+   fancybox=True, shadow=True, ncol=2, fontsize=14)
 
-    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"], fontsize=14)
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"], fontsize=14)
 
     plt.ylim(0, 1)
 
-    plt.title("Practical Success Rate vs Spike Time Per-Task")
-    plt.xlabel("Spike time (ms)")
-    plt.ylabel("Success rate")
+    plt.title("Practical Success Rate vs Spike Size Per-Task", fontsize=14)
+    plt.xlabel("Spike size (ms)", fontsize=14)
+    plt.ylabel("Practical success rate", fontsize=14)
+
+    plt.tight_layout()
 
     fig.savefig("figures/practical_success_rate_vs_spike_time_per_task.png")
 
@@ -1339,7 +1345,7 @@ def success_rate_vs_spike_time():
         "Saved success rate vs spike time to figures/success_rate_vs_spike_time_per_task.png"
     )
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,5.5))
 
     base = slope_equations_actual["Collect Power-Up"](0)
 
@@ -1351,22 +1357,25 @@ def success_rate_vs_spike_time():
 
         y_actual = [(slope_equations_actual[type](val) + offset) for val in x]
 
-        handle_actual = plt.scatter(x, y_actual, marker=markers[a])
+        handle_actual = plt.scatter(x, y_actual, s=40, c=colors[a], marker=markers[a])
 
-        plt.plot(x, y_actual)
+        plt.plot(x, y_actual, c=colors[a])
 
         handles.append(handle_actual)
 
-    plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
+    plt.legend(handles, [f"{key} [r2: {str(r2_actual[key])}]" for key in success_rates_actual.keys()], loc='upper center', bbox_to_anchor=(0.5, -0.20),
+   fancybox=True, shadow=True, ncol=2, fontsize=14)
 
-    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"], fontsize=14)
     plt.yticks([])
 
     plt.ylim(0, 1)
 
-    plt.title("Comparison of Trendlines")
-    plt.xlabel("Spike time (ms)")
+    plt.title("Comparison of Trendlines", fontsize=14)
+    plt.xlabel("Spike size (ms)", fontsize=14)
     # plt.ylabel("Success rate")
+
+    plt.tight_layout()
 
     fig.savefig("figures/slopes_success_rate_vs_spike_time_per_task.png")
 
@@ -1422,10 +1431,10 @@ def success_rate_vs_spike_time():
                     success_rates_by_task_actual[level_type][3].append(success_rate_actual)
 
     handles = []
-    markers = [".", "^", "s", "D"]
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+    markers = ["o", "^", "s", "D"]
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,5.5))
 
     slope_equations_actual = dict()
     original_data = dict()
@@ -1465,7 +1474,7 @@ def success_rate_vs_spike_time():
 
         r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 3)
 
-        handle_actual = plt.scatter(x, y_actual, marker=markers[a])
+        handle_actual = plt.scatter(x, y_actual, s=40, marker=markers[a])
 
         plt.plot(x, [slope_equations_actual[type](val) for val in x])
 
@@ -1481,16 +1490,19 @@ def success_rate_vs_spike_time():
 
         handles.append(handle_actual)
 
-    plt.legend(handles, [key + " " + str(r2_actual[key]) for key in success_rates_actual.keys()])
+    plt.legend(handles, [f"{key} [r2: {str(r2_actual[key])}]" for key in success_rates_actual.keys()], loc='upper center', bbox_to_anchor=(0.5, -0.20),
+   fancybox=True, shadow=True, ncol=2, fontsize=14)
 
-    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"], fontsize=14)
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"], fontsize=14)
 
     plt.ylim(0, 1)
 
-    plt.title("Actual Success Rate vs Spike Time Per-Task")
-    plt.xlabel("Spike time (ms)")
-    plt.ylabel("Success rate")
+    plt.title("Actual Success Rate vs Spike Size Per-Task", fontsize=14)
+    plt.xlabel("Spike size (ms)", fontsize=14)
+    plt.ylabel("Actual success rate", fontsize=14)
+
+    plt.tight_layout()
 
     fig.savefig("figures/actual_success_rate_vs_spike_time_per_task.png")
 
@@ -1581,10 +1593,10 @@ def success_rate_vs_spike_time():
                     success_rates_by_task_practical[level_type][3].append(success_rate_practical)
 
     handles = []
-    markers = [".", "^", "s", "D"]
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+    markers = ["o", "^", "s", "D"]
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,5.5))
 
     slope_equations_actual = dict()
     slope_equations_practical = dict()
@@ -1675,7 +1687,7 @@ def success_rate_vs_spike_time():
         ax.set_ylim(0, 1)
 
         ax.set_title(f"{type}")
-        ax.set_xlabel("Spike time (ms)")
+        ax.set_xlabel("Spike size (ms)")
         ax.set_ylabel("Success rate")
 
         col += 1
@@ -1779,7 +1791,7 @@ def success_rate_vs_spike_time():
         ax.set_ylim(0, 1)
 
         ax.set_title(f"{ROUND_NAMES[type]}")
-        ax.set_xlabel("Spike time (ms)")
+        ax.set_xlabel("Spike size (ms)")
         ax.set_ylabel("Success rate")
 
         col += 1
@@ -1867,7 +1879,7 @@ def success_rate_vs_spike_time():
 
     #     plt.close("all")
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,5.5))
 
     slope_equations_actual = dict()
     original_data = dict()
@@ -1908,31 +1920,31 @@ def success_rate_vs_spike_time():
         r2_actual[type] = round(compute_r2(y_actual, [slope_equations_actual[type](val) for val in x]), 2)
 
         markers = {
-            "Collect Power-Up": ".",
+            "Collect Power-Up": "o",
             "Squish Enemy": "^",
             "Jump Over Gap": "s",
             "Special Jump": "D"
         }
 
-        handle_actual = plt.scatter(x, y_actual, marker=markers[ROUND_TYPES[type]])
+        handle_actual = plt.scatter(x, y_actual, s=40, c=colors[a], marker=markers[ROUND_TYPES[type]], label = f"{ROUND_NAMES[type]} [r2: {str(r2_actual[type])}]")
 
-        plt.plot(x, [slope_equations_actual[type](val) for val in x], label = ROUND_NAMES[type] + " [" + str(r2_actual[type]) + "]")
+        plt.plot(x, [slope_equations_actual[type](val) for val in x])
 
         handles.append(handle_actual)
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-              fancybox=True, shadow=True, ncol=2)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20),
+              fancybox=True, shadow=True, ncol=2, fontsize=12)
 
-    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"])
-    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"])
+    plt.xticks([0, 75, 150, 225], labels=["0", "75", "150", "225"], fontsize=14)
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], labels=["0", "0.25", "0.5", "0.75", "1"], fontsize=14)
 
     plt.ylim(0, 1)
 
-    plt.tight_layout()
-    plt.title("Success Rate vs Spike Time Per-Task")
-    plt.xlabel("Spike time (ms)")
-    plt.ylabel("Success rate")
+    plt.title("Success Rate vs Spike Size Per-Task", fontsize=14)
+    plt.xlabel("Spike size (ms)", fontsize=14)
+    plt.ylabel("Practical success rate", fontsize=14)
 
+    plt.tight_layout()
     fig.savefig("figures/success_rate_vs_spike_time_all_task.png")
 
     plt.close("all")
