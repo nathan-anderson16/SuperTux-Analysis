@@ -212,10 +212,14 @@ def graph_pdi():
             qoe_by_impact.setdefault(impact_score, [])
 
             if uid in all_qoe_logs:
-                qoe_score = [log.score for log in all_qoe_logs[uid]]
-                qoe_by_precision[precision_score].append(qoe_score)
-                qoe_by_deadline[deadline_score].append(qoe_score)
-                qoe_by_impact[impact_score].append(qoe_score)
+                round_index = next(
+                    (i for i, round_df in enumerate(event_logs[uid]) if round_df.equals(current_round)), None)
+
+                if round_index is not None and round_index < len(all_qoe_logs[uid]):
+                    qoe_score = all_qoe_logs[uid][round_index].score
+                    qoe_by_precision[precision_score].append(qoe_score)
+                    qoe_by_deadline[deadline_score].append(qoe_score)
+                    qoe_by_impact[impact_score].append(qoe_score)
 
             success_rates_by_precision_actual[precision_score].append(success_rate_actual)
             success_rates_by_precision_practical[precision_score].append(success_rate_practical)
@@ -244,7 +248,7 @@ def graph_pdi():
         ax.set_ylim(0, 1)
         ax.set_title(f"Success Rate vs {xlabel}")
         ax.set_xlabel(xlabel)
-        ax.set_ylabel("Success Rate")
+        ax.set_ylabel("Average Success Rate")
 
         plt.tight_layout()
         fig.savefig(f"figures/{filename}.png")
@@ -274,7 +278,7 @@ def graph_pdi():
         ax.set_ylim(0, 1)
         ax.set_title(f"Practical Success Rate vs {xlabel}")
         ax.set_xlabel(xlabel)
-        ax.set_ylabel("Success Rate")
+        ax.set_ylabel("Average Success Rate")
 
         plt.tight_layout()
         fig.savefig(f"figures/{filename}.png")
@@ -304,7 +308,7 @@ def graph_pdi():
         ax.set_ylim(0, 1)
         ax.set_title(f"Actual Success Rate vs {xlabel}")
         ax.set_xlabel(xlabel)
-        ax.set_ylabel("Success Rate")
+        ax.set_ylabel("Average Success Rate")
 
         plt.tight_layout()
         fig.savefig(f"figures/{filename}.png")
@@ -314,11 +318,14 @@ def graph_pdi():
         """
         Plots QoE score vs. the given metric
         """
+        markers = ["o", "s", "d"]
+        colors = ["b", "g", "r"]
+        labels = ["Precision", "Deadline", "Impact"]
         x = sorted(qoe_scores.keys())
         y_qoe = [np.mean(qoe_scores[p] or [0]) for p in x]
 
         fig, ax = plt.subplots()
-        ax.plot(x, y_qoe, marker="o", linestyle="-", label="QoE Score", color="purple")
+        ax.plot(x, y_qoe, marker=markers[0], linestyle="-", label="QoE Score", color=colors[0])
 
         ax.legend()
         ax.set_xticks([1, 2, 3, 4, 5])
@@ -326,7 +333,34 @@ def graph_pdi():
         ax.set_ylim(1, 5)
         ax.set_title(f"QoE Score vs {xlabel}")
         ax.set_xlabel(xlabel)
-        ax.set_ylabel("QoE Score")
+        ax.set_ylabel("Average QoE Score")
+
+        plt.tight_layout()
+        fig.savefig(f"figures/{filename}.png")
+        plt.close()
+
+    def plot_combined_qoe_graph(qoe_by_precision, qoe_by_deadline, qoe_by_impact, filename):
+        """
+        Plots QoE scores for Precision, Deadline, and Impact on the same graph.
+        """
+        fig, ax = plt.subplots()
+        markers = ["o", "s", "d"]
+        colors = ["b", "g", "r"]
+        labels = ["Precision", "Deadline", "Impact"]
+
+        for i, (qoe_scores, label) in enumerate(zip(
+                [qoe_by_precision, qoe_by_deadline, qoe_by_impact], labels)):
+            x = sorted(qoe_scores.keys())
+            y_qoe = [np.mean(qoe_scores[p] or [0]) for p in x]
+            ax.plot(x, y_qoe, marker=markers[i], linestyle="-", label=f"{label} QoE", color=colors[i])
+
+        ax.legend()
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_ylim(1, 5)
+        ax.set_title("QoE Score Comparison by Metric")
+        ax.set_xlabel("Score")
+        ax.set_ylabel("Average QoE Score")
 
         plt.tight_layout()
         fig.savefig(f"figures/{filename}.png")
@@ -342,3 +376,5 @@ def graph_pdi():
     plot_qoe_graph(qoe_by_precision, "Precision Score", "qoe_vs_precision")
     plot_qoe_graph(qoe_by_deadline, "Deadline Score", "qoe_vs_deadline")
     plot_qoe_graph(qoe_by_impact, "Impact Score", "qoe_vs_impact")
+
+    plot_combined_qoe_graph(qoe_by_precision, qoe_by_deadline, qoe_by_impact, "qoe_comparison")
