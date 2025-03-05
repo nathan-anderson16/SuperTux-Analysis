@@ -13,6 +13,22 @@ To install, run
 # Running
 `uv run src/main.py`
 
+# Logs
+By default, logs are saved to the following locations:
+- [Windows] AppData\Roaming\SuperTuxClassic\logs
+- [Mac] /Library/Application Support/SuperTuxClassic/logs
+- [Linux] ~/.local/share/SuperTuxClassic/logs
+
+There are four types of logs:
+- Event Logs (~/SuperTuxClassic/logs/event_logs)
+    - Contain all information on in-game events and triggers
+- Frame Logs (~/SuperTuxClassic/logs/frame_logs)
+    - Contain frame-by-frame information 
+- QoE Logs (~/SuperTuxClassic/logs/qoe_logs)
+    - Contain all post round QoE survey information
+- Summary Logs (~/SuperTuxClassic/logs/summary_logs)
+    - Contain summaries of each round in a human-readable format
+
 # Results Format
 Logs should go in a directory called Results, in the following format:
 - Results/
