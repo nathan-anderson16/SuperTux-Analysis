@@ -1,10 +1,19 @@
 import math
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
-import util
+
+from util import (
+    LOG_MANAGER,
+    ROUND_MAX_SUCCESSES,
+    ROUND_NAMES,
+    ROUND_TYPES,
+    QoELog,
+    Round,
+    parse_timestamp,
+    compute_r2
+)
 
 import matplotlib.pyplot as plt
 
@@ -108,11 +117,11 @@ def graph_success_rate():
     print("Graph Success Rate Created")
 
 def graph_acceptability():
-    all_round_logs = util.LOG_MANAGER.logs_per_round()
+    all_round_logs = LOG_MANAGER.logs_per_round()
     acceptability_rates = {}
 
     for i in range(1, 33, 4):
-        level_name, _ = util.Round.from_unique_id(i)
+        level_name, _ = Round.from_unique_id(i)
 
         delays = [0, 75, 150, 225]
         acceptability_data = {
@@ -144,7 +153,192 @@ def graph_acceptability():
     plt.savefig("figures/graph_acceptability.png")
     print("Graph Acceptability Created")
 
+def graph_pdi():
+    """
+    Graphs success rate vs precision, deadline, and impact scores.
+    """
+    event_logs = LOG_MANAGER.cleaned_event_logs()
+    word_to_num = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+
+    success_rates_by_precision_actual = {}
+    success_rates_by_deadline_actual = {}
+    success_rates_by_impact_actual = {}
+
+    success_rates_by_precision_practical = {}
+    success_rates_by_deadline_practical = {}
+    success_rates_by_impact_practical = {}
+
+    qoe_by_precision = {}
+    qoe_by_deadline = {}
+    qoe_by_impact = {}
+
+    all_qoe_logs = LOG_MANAGER.qoe_logs()
+
+    qoe_scores_by_uid = {uid: [log.score for log in logs] for uid, logs in all_qoe_logs.items()}
+
+    for uid in event_logs:
+        for current_round in event_logs[uid]:
+            last = int(current_round.iloc[-1]["Coins"])
+            first = int(current_round.iloc[0]["Coins"])
+
+            n_failures = sum(1 for row in current_round["Event"] if "Death" in row or "Failure" in row)
+            n_successes = int((last - first) / 100.0)
+
+            level_type = str(current_round.iloc[0]["Level"])
+            max_successes_practical = ROUND_MAX_SUCCESSES[level_type]
+            max_successes_actual = n_successes + n_failures
+
+            success_rate_practical = n_successes / max_successes_practical
+            success_rate_actual = n_successes / max_successes_actual
+
+            level_parts = level_type.split("_")
+            precision_score = word_to_num[level_parts[0]]
+            deadline_score = word_to_num[level_parts[1]]
+            impact_score = word_to_num[level_parts[2]]
+
+            qoe_by_precision.setdefault(precision_score, [])
+            qoe_by_deadline.setdefault(deadline_score, [])
+            qoe_by_impact.setdefault(impact_score, [])
+
+            for score_dict in [success_rates_by_precision_actual, success_rates_by_precision_practical]:
+                score_dict.setdefault(precision_score, [])
+            for score_dict in [success_rates_by_deadline_actual, success_rates_by_deadline_practical]:
+                score_dict.setdefault(deadline_score, [])
+            for score_dict in [success_rates_by_impact_actual, success_rates_by_impact_practical]:
+                score_dict.setdefault(impact_score, [])
+
+            qoe_by_precision.setdefault(precision_score, [])
+            qoe_by_deadline.setdefault(deadline_score, [])
+            qoe_by_impact.setdefault(impact_score, [])
+
+            if uid in all_qoe_logs:
+                qoe_score = [log.score for log in all_qoe_logs[uid]]
+                qoe_by_precision[precision_score].append(qoe_score)
+                qoe_by_deadline[deadline_score].append(qoe_score)
+                qoe_by_impact[impact_score].append(qoe_score)
+
+            success_rates_by_precision_actual[precision_score].append(success_rate_actual)
+            success_rates_by_precision_practical[precision_score].append(success_rate_practical)
+
+            success_rates_by_deadline_actual[deadline_score].append(success_rate_actual)
+            success_rates_by_deadline_practical[deadline_score].append(success_rate_practical)
+
+            success_rates_by_impact_actual[impact_score].append(success_rate_actual)
+            success_rates_by_impact_practical[impact_score].append(success_rate_practical)
 
 
+    def plot_graph(success_rates_actual, success_rates_practical, xlabel, filename):
+        x = sorted(success_rates_actual.keys())
+        y_actual = [np.mean(success_rates_actual[p] or [0]) for p in x]
+        y_practical = [np.mean(success_rates_practical[p] or [0]) for p in x]
 
+        fig, ax = plt.subplots()
+        ax.plot(x, y_actual, marker="o", linestyle="-", label="Actual Success Rate", color="b")
+        ax.plot(x, y_practical, marker="s", linestyle="--", label="Practical Success Rate", color="r")
 
+        ax.legend()
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_yticks(np.linspace(0, 1, 5))
+        ax.set_yticklabels(["0", "0.25", "0.5", "0.75", "1"])
+        ax.set_ylim(0, 1)
+        ax.set_title(f"Success Rate vs {xlabel}")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("Success Rate")
+
+        plt.tight_layout()
+        fig.savefig(f"figures/{filename}.png")
+        plt.close()
+
+    def plot_combined_graph_practical(success_rates_practical, xlabel, filename):
+        """
+        Plots precision, deadline, and impact success rates on the same graph
+        """
+        fig, ax = plt.subplots()
+        markers = ["o", "s", "d"]
+        colors = ["b", "g", "r"]
+        labels = ["Precision", "Deadline", "Impact"]
+
+        for i, (success_rates, label) in enumerate(zip(
+                [success_rates_by_precision_practical, success_rates_by_deadline_practical, success_rates_by_impact_practical],
+                labels)):
+            x = sorted(success_rates.keys())
+            y = [np.mean(success_rates[p] or [0]) for p in x]
+            ax.plot(x, y, marker=markers[i], linestyle="-", label=f"{label} Success Rate", color=colors[i])
+
+        ax.legend()
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_yticks(np.linspace(0, 1, 5))
+        ax.set_yticklabels(["0", "0.25", "0.5", "0.75", "1"])
+        ax.set_ylim(0, 1)
+        ax.set_title(f"Practical Success Rate vs {xlabel}")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("Success Rate")
+
+        plt.tight_layout()
+        fig.savefig(f"figures/{filename}.png")
+        plt.close()
+
+    def plot_combined_graph_actual(success_rates_actual, xlabel, filename):
+        """
+        Plots precision, deadline, and impact actual success rates on the same graph
+        """
+        fig, ax = plt.subplots()
+        markers = ["o", "s", "d"]
+        colors = ["b", "g", "r"]
+        labels = ["Precision", "Deadline", "Impact"]
+
+        for i, (success_rates, label) in enumerate(zip(
+                [success_rates_by_precision_actual, success_rates_by_deadline_actual, success_rates_by_impact_actual],
+                labels)):
+            x = sorted(success_rates.keys())
+            y = [np.mean(success_rates[p] or [0]) for p in x]
+            ax.plot(x, y, marker=markers[i], linestyle="-", label=f"{label} Success Rate", color=colors[i])
+
+        ax.legend()
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_yticks(np.linspace(0, 1, 5))
+        ax.set_yticklabels(["0", "0.25", "0.5", "0.75", "1"])
+        ax.set_ylim(0, 1)
+        ax.set_title(f"Actual Success Rate vs {xlabel}")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("Success Rate")
+
+        plt.tight_layout()
+        fig.savefig(f"figures/{filename}.png")
+        plt.close()
+
+    def plot_qoe_graph(qoe_scores, xlabel, filename):
+        """
+        Plots QoE score vs. the given metric
+        """
+        x = sorted(qoe_scores.keys())
+        y_qoe = [np.mean(qoe_scores[p] or [0]) for p in x]
+
+        fig, ax = plt.subplots()
+        ax.plot(x, y_qoe, marker="o", linestyle="-", label="QoE Score", color="purple")
+
+        ax.legend()
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_ylim(1, 5)
+        ax.set_title(f"QoE Score vs {xlabel}")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("QoE Score")
+
+        plt.tight_layout()
+        fig.savefig(f"figures/{filename}.png")
+        plt.close()
+
+    plot_graph(success_rates_by_precision_actual, success_rates_by_precision_practical, "Precision Score", "success_vs_precision")
+    plot_graph(success_rates_by_deadline_actual, success_rates_by_deadline_practical, "Deadline Score", "success_vs_deadline")
+    plot_graph(success_rates_by_impact_actual, success_rates_by_impact_practical, "Impact Score", "success_vs_impact")
+
+    plot_combined_graph_practical(success_rates_by_precision_practical, "Score", "practical_success_comparison")
+    plot_combined_graph_actual(success_rates_by_precision_actual, "Score", "actual_success_comparison")
+
+    plot_qoe_graph(qoe_by_precision, "Precision Score", "qoe_vs_precision")
+    plot_qoe_graph(qoe_by_deadline, "Deadline Score", "qoe_vs_deadline")
+    plot_qoe_graph(qoe_by_impact, "Impact Score", "qoe_vs_impact")

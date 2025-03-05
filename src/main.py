@@ -33,11 +33,12 @@ def main():
     ivdv.graph_failure_distribution()
     ivdv.graph_success_rate()
     ivdv.graph_acceptability()
-    demo_info = misc.demographics_info()
-    misc.platformer_experience_vs_qoe(demo_info)
-    misc.platformer_experience_vs_score(demo_info)
-    misc.reaction_time_vs_qoe(demo_info)
-    misc.reaction_time_vs_score(demo_info)
+    ivdv.graph_pdi()
+    # demo_info = misc.demographics_info()
+    # misc.platformer_experience_vs_qoe(demo_info)
+    # misc.platformer_experience_vs_score(demo_info)
+    # misc.reaction_time_vs_qoe(demo_info)
+    # misc.reaction_time_vs_score(demo_info)
 
 
 if __name__ == "__main__":
