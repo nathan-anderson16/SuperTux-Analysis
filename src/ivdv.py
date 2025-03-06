@@ -235,10 +235,25 @@ def graph_pdi():
         x = sorted(success_rates_actual.keys())
         y_actual = [np.mean(success_rates_actual[p] or [0]) for p in x]
         y_practical = [np.mean(success_rates_practical[p] or [0]) for p in x]
+        z = 1.96
+
+        ci_actual = [
+            z * (np.std(success_rates_actual[p]) / math.sqrt(len(success_rates_actual[p])))
+            if success_rates_actual[p] else 0
+            for p in x
+        ]
+
+        ci_practical = [
+            z * (np.std(success_rates_practical[p]) / math.sqrt(len(success_rates_practical[p])))
+            if success_rates_practical[p] else 0
+            for p in x
+        ]
 
         fig, ax = plt.subplots()
         ax.plot(x, y_actual, marker="o", linestyle="-", label="Actual Success Rate", color="b")
         ax.plot(x, y_practical, marker="s", linestyle="--", label="Practical Success Rate", color="r")
+        ax.errorbar(x, y_actual, yerr=ci_actual, fmt="o", capsize=4, color="b", alpha=0.7)
+        ax.errorbar(x, y_practical, yerr=ci_practical, fmt="s", capsize=4, color="r", alpha=0.7)
 
         ax.legend()
         ax.set_xticks([1, 2, 3, 4, 5])
@@ -262,13 +277,20 @@ def graph_pdi():
         markers = ["o", "s", "d"]
         colors = ["b", "g", "r"]
         labels = ["Precision", "Deadline", "Impact"]
+        z = 1.96
 
         for i, (success_rates, label) in enumerate(zip(
                 [success_rates_by_precision_practical, success_rates_by_deadline_practical, success_rates_by_impact_practical],
                 labels)):
             x = sorted(success_rates.keys())
             y = [np.mean(success_rates[p] or [0]) for p in x]
+            ci = [
+                z * (np.std(success_rates[p]) / math.sqrt(len(success_rates[p])))
+                if success_rates[p] else 0
+                for p in x
+            ]
             ax.plot(x, y, marker=markers[i], linestyle="-", label=f"{label} Success Rate", color=colors[i])
+            ax.errorbar(x, y, yerr=ci, fmt=markers[i], capsize=4, color=colors[i], alpha=0.7)
 
         ax.legend()
         ax.set_xticks([1, 2, 3, 4, 5])
@@ -298,7 +320,14 @@ def graph_pdi():
                 labels)):
             x = sorted(success_rates.keys())
             y = [np.mean(success_rates[p] or [0]) for p in x]
+            z = 1.96
+            ci = [
+                z * (np.std(success_rates[p]) / math.sqrt(len(success_rates[p])))
+                if success_rates[p] else 0
+                for p in x
+            ]
             ax.plot(x, y, marker=markers[i], linestyle="-", label=f"{label} Success Rate", color=colors[i])
+            ax.errorbar(x, y, yerr=ci, fmt=markers[i], capsize=4, color=colors[i], alpha=0.7)
 
         ax.legend()
         ax.set_xticks([1, 2, 3, 4, 5])
@@ -323,9 +352,17 @@ def graph_pdi():
         labels = ["Precision", "Deadline", "Impact"]
         x = sorted(qoe_scores.keys())
         y_qoe = [np.mean(qoe_scores[p] or [0]) for p in x]
+        z = 1.96
+
+        ci_qoe = [
+            z * (np.std(qoe_scores[p]) / math.sqrt(len(qoe_scores[p])))
+            if qoe_scores[p] else 0
+            for p in x
+        ]
 
         fig, ax = plt.subplots()
         ax.plot(x, y_qoe, marker=markers[0], linestyle="-", label="QoE Score", color=colors[0])
+        ax.errorbar(x, y_qoe, yerr=ci_qoe, fmt="o", capsize=4, color="b", alpha=0.7)
 
         ax.legend()
         ax.set_xticks([1, 2, 3, 4, 5])
@@ -352,7 +389,14 @@ def graph_pdi():
                 [qoe_by_precision, qoe_by_deadline, qoe_by_impact], labels)):
             x = sorted(qoe_scores.keys())
             y_qoe = [np.mean(qoe_scores[p] or [0]) for p in x]
+            z = 1.96
+            ci_qoe = [
+                z * (np.std(qoe_scores[p]) / math.sqrt(len(qoe_scores[p])))
+                if qoe_scores[p] else 0
+                for p in x
+            ]
             ax.plot(x, y_qoe, marker=markers[i], linestyle="-", label=f"{label} QoE", color=colors[i])
+            ax.errorbar(x, y_qoe, yerr=ci_qoe, fmt=markers[i], capsize=4, color=colors[i], alpha=0.7)
 
         ax.legend()
         ax.set_xticks([1, 2, 3, 4, 5])
