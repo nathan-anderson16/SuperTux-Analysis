@@ -21,6 +21,8 @@ def main():
     # This doesn't apply to the title font size.
     plt.rcParams.update({"font.size": 10})
 
+
+
     misc.qoe_distribution()
     misc.success_rate_vs_spike_time()
     misc.compute_lag_differences()
@@ -34,6 +36,7 @@ def main():
     ivdv.graph_success_rate()
     ivdv.graph_acceptability()
     ivdv.graph_pdi()
+    ivdv.graph_qoe_violin()
     # demo_info = misc.demographics_info()
     # misc.platformer_experience_vs_qoe(demo_info)
     # misc.platformer_experience_vs_score(demo_info)

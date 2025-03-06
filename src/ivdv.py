@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import seaborn as sb
 import pandas as pd
 import os
 
@@ -422,3 +423,39 @@ def graph_pdi():
     plot_qoe_graph(qoe_by_impact, "Impact Score", "qoe_vs_impact")
 
     plot_combined_qoe_graph(qoe_by_precision, qoe_by_deadline, qoe_by_impact, "qoe_comparison")
+
+
+def graph_qoe_violin():
+
+    all_round_logs = LOG_MANAGER.logs_per_round()
+    fig = plt.figure(figsize=(4, 3))
+
+    qoe_data = []
+    spike_labels = []
+
+    spike_sizes = [0, 75, 150, 225]
+
+    for i in range(1, 33, 4):
+        for j, spike_size in enumerate(spike_sizes):
+            if (i + j) in all_round_logs:
+                ms_logs = all_round_logs[i + j]
+                qoe_scores = [log.logs["qoe"].score for log in ms_logs]
+
+                qoe_data.extend(qoe_scores)
+                spike_labels.extend([spike_size] * len(qoe_scores))
+
+    df = pd.DataFrame({"Spike Size": spike_labels, "QoE Score": qoe_data})
+
+    sb.violinplot(x="Spike Size", y="QoE Score", data=df, inner="quartile")
+
+    plt.xlabel("Frametime Spike Size (ms)")
+    plt.ylabel("QoE Score")
+    plt.title("QoE Score Distribution vs Frametime Spike Size")
+    plt.xticks([0, 1, 2, 3], labels=["0", "75", "150", "225"])
+    plt.yticks([1, 2, 3, 4, 5], labels=["1", "2", "3", "4", "5"])
+    plt.ylim((1, 5))
+    plt.tight_layout()
+
+    plt.savefig("figures/violin_qoe_vs_spike_size.png")
+    plt.close()
+
