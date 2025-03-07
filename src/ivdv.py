@@ -1,7 +1,7 @@
 import math
 
 import numpy as np
-import seaborn as sb
+#import seaborn as sb
 import pandas as pd
 import os
 
@@ -177,6 +177,10 @@ def graph_pdi():
 
     qoe_scores_by_uid = {uid: [log.score for log in logs] for uid, logs in all_qoe_logs.items()}
 
+    avg_value_to_practical = {}
+    avg_value_to_actual = {}
+    avg_value_to_qoe = {}
+
     for uid in event_logs:
         for current_round in event_logs[uid]:
             last = int(current_round.iloc[-1]["Coins"])
@@ -196,6 +200,13 @@ def graph_pdi():
             precision_score = word_to_num[level_parts[0]]
             deadline_score = word_to_num[level_parts[1]]
             impact_score = word_to_num[level_parts[2]]
+
+            avg = (precision_score + deadline_score + impact_score) / 3
+
+            if not avg in avg_value_to_practical :
+                avg_value_to_practical[avg] = []
+                avg_value_to_actual[avg] = []
+                avg_value_to_qoe[avg] = []
 
             qoe_by_precision.setdefault(precision_score, [])
             qoe_by_deadline.setdefault(deadline_score, [])
@@ -222,6 +233,8 @@ def graph_pdi():
                     qoe_by_deadline[deadline_score].append(qoe_score)
                     qoe_by_impact[impact_score].append(qoe_score)
 
+                    avg_value_to_qoe[avg].append(qoe_score)
+
             success_rates_by_precision_actual[precision_score].append(success_rate_actual)
             success_rates_by_precision_practical[precision_score].append(success_rate_practical)
 
@@ -230,6 +243,9 @@ def graph_pdi():
 
             success_rates_by_impact_actual[impact_score].append(success_rate_actual)
             success_rates_by_impact_practical[impact_score].append(success_rate_practical)
+
+            avg_value_to_practical[avg].append(success_rate_practical)
+            avg_value_to_actual[avg].append(success_rate_actual)
 
 
     def plot_graph(success_rates_actual, success_rates_practical, xlabel, filename):
@@ -265,6 +281,72 @@ def graph_pdi():
         ax.set_title(f"Success Rate vs {xlabel}")
         ax.set_xlabel(xlabel)
         ax.set_ylabel("Average Success Rate")
+
+        plt.tight_layout()
+        fig.savefig(f"figures/{filename}.png")
+        plt.close()
+
+    def plot_merged_vs_performance_graph(unpackable_items, title, filename):
+        """
+        Plots precision, deadline, and impact success rates on the same graph
+        """
+        fig, ax = plt.subplots()
+        markers = ["o", "s", "d"]
+        colors = ["b", "g", "r"]
+
+        x = []
+        y = []
+        z = 1.96
+        ci = []
+        for (pdi_score, values) in unpackable_items.items():
+            x.append(pdi_score)
+            y.append(np.mean(values))
+            ci.append( (z * np.std(values)) / math.sqrt(len(values)) )
+
+        ax.scatter(x, y, marker=markers[0], linestyle="-", label=f"{title}", color=colors[0])
+        ax.errorbar(x, y, yerr=ci, fmt=markers[0], capsize=4, color=colors[0], alpha=0.7)
+        #ax.legend()
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_yticks(np.linspace(0, 1, 5))
+        ax.set_yticklabels(["0", "0.25", "0.5", "0.75", "1"])
+        ax.set_ylim(0, 1)
+        ax.set_title(f"{title} vs PDI Averaged Score")
+        ax.set_xlabel("PDI Averaged Score")
+        ax.set_ylabel(f"{title}")
+
+        plt.tight_layout()
+        fig.savefig(f"figures/{filename}.png")
+        plt.close()
+
+    def plot_merged_vs_qoe_graph(unpackable_items, title, filename):
+        """
+        Plots precision, deadline, and impact success rates on the same graph
+        """
+        fig, ax = plt.subplots()
+        markers = ["o", "s", "d"]
+        colors = ["b", "g", "r"]
+
+        x = []
+        y = []
+        z = 1.96
+        ci = []
+        for (pdi_score, values) in unpackable_items.items():
+            x.append(pdi_score)
+            y.append(np.mean(values))
+            ci.append( (z * np.std(values)) / math.sqrt(len(values)) )
+
+        ax.scatter(x, y, marker=markers[0], linestyle="-", label=f"{title}", color=colors[0])
+        ax.errorbar(x, y, yerr=ci, fmt=markers[0], capsize=4, color=colors[0], alpha=0.7)
+        #ax.legend()
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_yticks([1, 2, 3, 4, 5])
+        ax.set_yticklabels([str(val) for val in [1, 2, 3, 4, 5]])
+        ax.set_ylim(1, 5)
+        ax.set_title(f"{title} vs PDI Averaged Score")
+        ax.set_xlabel("PDI Averaged Score")
+        ax.set_ylabel(f"{title}")
 
         plt.tight_layout()
         fig.savefig(f"figures/{filename}.png")
@@ -418,6 +500,10 @@ def graph_pdi():
     plot_combined_graph_practical(success_rates_by_precision_practical, "Score", "practical_success_comparison")
     plot_combined_graph_actual(success_rates_by_precision_actual, "Score", "actual_success_comparison")
 
+    plot_merged_vs_performance_graph(avg_value_to_actual, "Actual Success Rate", "merged_actual_success_comparison")
+    plot_merged_vs_performance_graph(avg_value_to_practical, "Practical Success Rate", "merged_practical_success_comparison")
+    plot_merged_vs_qoe_graph(avg_value_to_qoe, "QoE", "merged_qoe_comparison")
+
     plot_qoe_graph(qoe_by_precision, "Precision Score", "qoe_vs_precision")
     plot_qoe_graph(qoe_by_deadline, "Deadline Score", "qoe_vs_deadline")
     plot_qoe_graph(qoe_by_impact, "Impact Score", "qoe_vs_impact")
@@ -446,7 +532,7 @@ def graph_qoe_violin():
 
     df = pd.DataFrame({"Spike Size": spike_labels, "QoE Score": qoe_data})
 
-    sb.violinplot(x="Spike Size", y="QoE Score", data=df, inner="quartile")
+    #sb.violinplot(x="Spike Size", y="QoE Score", data=df, inner="quartile")
 
     plt.xlabel("Frametime Spike Size (ms)")
     plt.ylabel("QoE Score")
@@ -458,4 +544,3 @@ def graph_qoe_violin():
 
     plt.savefig("figures/violin_qoe_vs_spike_size.png")
     plt.close()
-
